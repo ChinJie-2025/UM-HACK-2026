@@ -1,0 +1,19 @@
+# Secret files
+.env
+
+# Maven build artifacts (The "target" folder)
+target/
+
+# IDE settings (Visual Studio Code and IntelliJ)
+.vscode/
+.idea/
+
+# Compiled Java files
+*.class
+*.jar
+*.war
+*.ear
+
+# OS generated files
+.DS_Store
+Thumbs.db
