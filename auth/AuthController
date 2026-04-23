@@ -1,0 +1,38 @@
+import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+
+    // Mock Database for in-memory storage during the hackathon
+    public static Map<String, User> userDatabase = new HashMap<>();
+
+    @PostMapping("/signup")
+    public String signup(@RequestBody User newUser) {
+        if (userDatabase.containsKey(newUser.getEmail())) {
+            return "Error: Email already registered.";
+        }
+        // Initialize an empty profile for the new farmer
+        FarmerProfile defaultProfile = new FarmerProfile(newUser.getUsername(), "Conservative");
+        newUser.setProfile(defaultProfile);
+        
+        userDatabase.put(newUser.getEmail(), newUser);
+        return "User registered successfully!";
+    }
+
+    @PostMapping("/login")
+    public String login(@RequestParam String email, @RequestParam String password) {
+        User user = userDatabase.get(email);
+        if (user != null && user.getPassword().equals(password)) {
+            return "Login successful. Welcome, " + user.getUsername();
+        }
+        return "Error: Invalid credentials.";
+    }
+
+    @PostMapping("/logout")
+    public String logout() {
+        return "Logged out successfully.";
+    }
+}

@@ -1,0 +1,35 @@
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/profile")
+public class ProfileEditor {
+
+    // Update risk tolerance or farmer name
+    @PutMapping("/update-constraints")
+    public String updateConstraints(@RequestParam String email, 
+                                    @RequestParam(required = false) String newName, 
+                                    @RequestParam(required = false) String newRisk) {
+        
+        User user = AuthController.userDatabase.get(email);
+        
+        if (user == null) return "User not found.";
+
+        FarmerProfile profile = user.getProfile();
+        
+        if (newName != null) profile.setFarmerName(newName);
+        if (newRisk != null) profile.setRiskTolerance(newRisk);
+        
+        return "Profile updated! Strategy is now: " + profile.getRiskTolerance();
+    }
+
+    // Add a new plot to the user's profile
+    @PostMapping("/add-plot")
+    public String addPlot(@RequestParam String email, @RequestBody CropPlot newPlot) {
+        User user = AuthController.userDatabase.get(email);
+        
+        if (user == null) return "User not found.";
+        
+        user.getProfile().addPlot(newPlot);
+        return "Plot " + newPlot.getCropName() + " added successfully.";
+    }
+}
