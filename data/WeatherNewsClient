@@ -1,44 +1,57 @@
 package data;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
+/**
+ * Handles unstructured data ingestion.
+ * Reads raw text headlines to provide the 'Why' behind AI recommendations.
+ */
 public class WeatherNewsClient {
 
+    private static final String NEWS_PATH = "/field_intelligence.txt";
     private final Random random = new Random();
 
     public String fetchUnstructuredContext(String region) {
+        List<String> allNews = new ArrayList<>();
 
-        List<String> weatherOptions = Arrays.asList(
-            "[WEATHER][RISK=MEDIUM] Heavy rainfall alert from MET Malaysia for " + region,
-            "[WEATHER][RISK=LOW] Ideal sunshine levels predicted for next 10 days in " + region,
-            "[WEATHER][RISK=HIGH] Flash flood warning for low-lying plots in " + region,
-            "[WEATHER][RISK=MEDIUM] Mild drought conditions; irrigation optimization recommended for " + region
-        );
+        // 1. Read the unstructured text file from resources
+        InputStream is = getClass().getResourceAsStream(NEWS_PATH);
+        
+        if (is == null) {
+            return "--- LATEST UNSTRUCTURED FIELD INTELLIGENCE ---\nNo news data available for " + region;
+        }
 
-        List<String> newsPool = Arrays.asList(
-            "[POLICY][CROP=GINGER][IMPACT=POSITIVE][MAG=HIGH] 15% fertilizer subsidy increase announced.",
-            "[MARKET][CROP=CORN][IMPACT=NEGATIVE][MAG=MEDIUM] Global supply glut expected to reduce prices.",
-            "[MARKET][CROP=CHILI][IMPACT=POSITIVE][MAG=HIGH] Rising demand in urban KL/PJ markets.",
-            "[DISEASE][CROP=LEAFY_GREENS][RISK=HIGH] High humidity increasing fungal infection risk.",
-            "[LOGISTICS][IMPACT=NEGATIVE][MAG=LOW] Toll rate hike affecting transport costs."
-        );
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (!line.trim().isEmpty()) {
+                    allNews.add(line.trim());
+                }
+            }
+        } catch (IOException e) {
+            return "--- ERROR ---\nFailed to read news feed.";
+        }
 
-        String weather = weatherOptions.get(random.nextInt(weatherOptions.size()));
+        // 2. Select a subset of news to keep the prompt focused
+        Collections.shuffle(allNews);
+        List<String> selectedNews = allNews.subList(0, Math.min(3, allNews.size()));
 
-        Collections.shuffle(newsPool);
-        List<String> selectedNews = newsPool.stream()
-                                            .limit(2)
-                                            .collect(Collectors.toList());
-
+        // 3. Build the context string
         StringBuilder contextBuilder = new StringBuilder();
         contextBuilder.append("--- LATEST UNSTRUCTURED FIELD INTELLIGENCE ---\n");
         contextBuilder.append("Target Region: ").append(region).append("\n");
-        contextBuilder.append("Analysis Timestamp: ").append(java.time.LocalDateTime.now()).append("\n\n");
+        contextBuilder.append("Timestamp: ").append(java.time.LocalDateTime.now()).append("\n\n");
 
-        contextBuilder.append("- ").append(weather).append("\n");
-        for (String news : selectedNews) {
-            contextBuilder.append("- ").append(news).append("\n");
+        for (String update : selectedNews) {
+            contextBuilder.append("- ").append(update).append("\n");
         }
 
         return contextBuilder.toString();

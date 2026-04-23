@@ -16,7 +16,7 @@ import java.util.List;
  */
 public class MarketDataClient {
 
-    private static final String CSV_PATH = "/market_prices.csv";
+    private static final String CSV_PATH = "/AgriWise_Crop_Da.csv";
 
     // Optional system-awareness tracking
     private boolean usingFallback = false;
