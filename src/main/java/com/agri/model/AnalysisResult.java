@@ -1,4 +1,4 @@
-package com.agri.model;
+package src.main.java.com.agri.model;
 
 import java.util.Map;
 import java.util.HashMap;

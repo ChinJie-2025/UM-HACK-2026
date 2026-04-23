@@ -1,25 +1,58 @@
-package com.agri.model;
+package src.main.java.com.agri.model;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FarmerProfile {
-    private String location;
-    private double landSize;      // in Hectares or Acres
-    private double budget;        // Available capital
-    private String riskTolerance; // e.g., "Conservative", "Balanced", "Aggressive"
+    private String farmerName;
+    private String riskTolerance;
+    private List<CropPlot> myPlots;
 
-    public FarmerProfile() {}
-
-    public FarmerProfile(String location, double landSize, double budget, String riskTolerance) {
-        this.location = location;
-        this.landSize = landSize;
-        this.budget = budget;
+    public FarmerProfile(String farmerName, String riskTolerance) {
+        this.farmerName = farmerName;
         this.riskTolerance = riskTolerance;
+        this.myPlots = new ArrayList<>();
     }
 
-    // Getters and Setters
-    public String getLocation() { return location; }
-    public void setLocation(String location) { this.location = location; }
-    public double getBudget() { return budget; }
-    public void setBudget(double budget) { this.budget = budget; }
+    public void addPlot(CropPlot plot) {
+        this.myPlots.add(plot);
+    }
+
+    /** * Calculates the total budget by summing all plots.
+     */
+    public double getTotalExpenses() {
+        double total = 0;
+        for (CropPlot plot : myPlots) {
+            total += plot.getPlotBudget();
+        }
+        return total;
+    }
+
+    public void displayDashboard() {
+        System.out.println("=== Farmer: " + farmerName + " ===");
+        System.out.println("Strategy: " + riskTolerance);
+        System.out.println("----------------------------");
+        if (myPlots.isEmpty()) {
+            System.out.println("No plots registered.");
+        } else {
+            for (CropPlot plot : myPlots) {
+                System.out.println(plot.toString());
+            }
+        }
+        System.out.println("----------------------------");
+        // We call the logic method here to show the sum
+        System.out.printf("TOTAL BUDGET SPENT: $%.2f%n", getTotalExpenses());
+    }
+
+    // --- Cleaned Getters and Setters ---
+
+    public String getFarmerName() { return farmerName; }
+    public void setFarmerName(String name) { this.farmerName = name; }
+
     public String getRiskTolerance() { return riskTolerance; }
-    public void setRiskTolerance(String riskTolerance) { this.riskTolerance = riskTolerance; }
+    public void setRiskTolerance(String risk) { this.riskTolerance = risk; }
+
+    public List<CropPlot> getMyPlots() { return myPlots; }
+    
+    // Note: totalBudget field was removed because we now calculate it 
+    // dynamically via getTotalExpenses().
 }
