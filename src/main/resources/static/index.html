@@ -323,12 +323,17 @@
             document.getElementById('chat-view').classList.add('hidden'); 
             document.getElementById('dashboard-view').classList.remove('hidden'); 
         }
-        function showChat(crop) {
-            document.getElementById('dashboard-view').classList.add('hidden');
-            document.getElementById('chat-view').classList.remove('hidden');
-            document.getElementById('chat-view').classList.add('flex');
-            document.getElementById('chat-messages').innerHTML = `<div class="bg-white p-4 rounded-2xl border text-sm shadow-sm">Uplink verified for <b>${crop}</b>. Awaiting risk strategy request...</div>`;
-        }
+        function showChat(cropName, landSize) {
+    // Set global context for the GLM
+    window.currentCrop = cropName;
+    window.currentSize = landSize;
+
+    document.getElementById('dashboard-view').classList.add('hidden');
+    document.getElementById('chat-view').classList.remove('hidden').add('flex');
+    
+    // Auto-trigger first analysis
+    sendMessage("Check my yield estimation");
+}
         // FAQ Trigger
 function quickFaq(question) {
     document.getElementById('chatInput').value = question;
@@ -336,32 +341,98 @@ function quickFaq(question) {
 }
 
 // Telegram-Style Send
-async function sendMessage() {
+async function sendMessage(presetMsg = null) {
     const input = document.getElementById('chatInput');
-    const msg = input.value.trim();
+    const msg = presetMsg || input.value.trim();
     if (!msg) return;
 
-    const chatBox = document.getElementById('chat-messages');
-    // User Bubble
-    chatBox.innerHTML += `<div class="flex justify-end mb-2 animate-fade-in"><div class="bg-slate-900 text-white px-4 py-2 rounded-2xl rounded-tr-none text-sm shadow-md">${msg}</div></div>`;
-    input.value = "";
-    chatBox.scrollTop = chatBox.scrollHeight;
+    // Use global variables set when the user clicked "Map New Plot" or a card
+    const payload = {
+        message: msg,
+        cropName: window.currentSelectedCrop || "General",
+        landSize: window.currentSelectedSize || "0"
+    };
 
     try {
         const res = await fetch('/api/crops/chat', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ message: msg })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
         const data = await res.json();
-        
-        // AI Bubble
-        setTimeout(() => {
-            chatBox.innerHTML += `<div class="flex justify-start mb-2 animate-fade-in"><div class="bg-white text-slate-800 px-4 py-2 rounded-2xl rounded-tl-none text-sm shadow-md border border-slate-100">${data.reply}</div></div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-            lucide.createIcons();
-        }, 600);
-    } catch(e) { console.error("Uplink lost."); }
+        appendAIResponse(data.reply);
+    } catch (e) {
+        console.error("GLM Sync Failed");
+    }
+}
+function appendUserMessage(msg) {
+    const chat = document.getElementById('chat-messages');
+
+    chat.insertAdjacentHTML('beforeend', `
+        <div class="flex justify-end animate-fade-in">
+            <div class="bg-emerald-500 text-white px-4 py-2 rounded-2xl max-w-xs">
+                ${msg}
+            </div>
+        </div>
+    `);
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function appendAIResponse(msg) {
+    const chat = document.getElementById('chat-messages');
+
+    chat.insertAdjacentHTML('beforeend', `
+        <div class="flex justify-start animate-fade-in">
+            <div class="bg-white px-4 py-3 rounded-2xl max-w-md shadow border">
+                ${msg}
+            </div>
+        </div>
+    `);
+
+    chat.scrollTop = chat.scrollHeight;
+}
+
+/* FIX ONLY THIS FUNCTION (DO NOT TOUCH OTHER LOGIC) */
+async function sendMessage(presetMsg = null) {
+    const input = document.getElementById('chatInput');
+    const msg = presetMsg || input.value.trim();
+    if (!msg) return;
+
+    appendUserMessage(msg);
+    input.value = "";
+
+    const payload = {
+        message: msg,
+
+        // 🔥 FIXED HERE
+        cropName: window.currentCrop || "General",
+        landSize: window.currentSize || "0"
+    };
+
+    try {
+        const res = await fetch('/api/crops/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        appendAIResponse(data.reply);
+
+    } catch (err) {
+        console.error(err);
+        appendAIResponse("⚠️ Z.AI backend error or not responding");
+    }
+}
+
+/* FIX showChat ONLY (small bug) */
+function showChat(cropName, landSize) {
+    window.currentCrop = cropName;
+    window.currentSize = landSize;
+
+    document.getElementById('dashboard-view').classList.add('hidden');
+    document.getElementById('chat-view').classList.remove('hidden');
 }
     </script>
 </body>

@@ -4,6 +4,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.agri.model.CropData;
+import com.agri.service.ZAIService;
+
+import java.nio.charset.StandardCharsets;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.*;
@@ -20,26 +26,27 @@ public class AgriwiseApplication {
         SpringApplication.run(AgriwiseApplication.class, args);
         System.out.println("🚀 AGRI-ANALYST BACKEND IS RUNNING!");
     }
-    
-    @PostMapping("/chat")
+
+   @Autowired
+private ZAIService zaiService;
+
+@PostMapping("/chat")
 public ResponseEntity<Map<String, String>> handleChat(@RequestBody Map<String, String> payload) {
-    String userMsg = payload.get("message").toLowerCase();
-    String response = "I'm analyzing your request...";
 
-    // FAQ LOGIC
-    if (userMsg.contains("weather")) {
-        response = "Z.AI Alert: Monsoon patterns detected near Universiti Malaya. Check your drainage.";
-    } else if (userMsg.contains("yield")) {
-        // Z.AI refers to the file
-        String plotData = getPlotDataSummary();
-        response = "Based on your ledger: " + plotData + ". Overall yield is stable.";
-    } else {
-        response = "I've reviewed your plot info. We should apply a balanced nutrient strategy today.";
-    }
+    String userMsg = payload.getOrDefault("message", "");
+    String crop = payload.getOrDefault("cropName", "Unknown");
 
-    Map<String, String> res = new HashMap<>();
-    res.put("reply", response);
-    return ResponseEntity.ok(res);
+    // Load datasets
+    String news = readDataset("/field_intelligence.txt");
+    String market = readDataset("/AgriWise_Crop_Dataset.csv");
+
+    // 🔥 Call AI instead of manual logic
+    String aiReply = zaiService.getAIResponse(userMsg, crop, market, news);
+
+    Map<String, String> response = new HashMap<>();
+    response.put("reply", aiReply);
+
+    return ResponseEntity.ok(response);
 }
 
 // Z.AI refers to the file
@@ -102,4 +109,19 @@ private String getPlotDataSummary() {
                        plot.get("plantingDate"));
         } catch (IOException e) { e.printStackTrace(); }
     }
+
+    private String readDataset(String path) {
+    StringBuilder content = new StringBuilder();
+    try (InputStream is = getClass().getResourceAsStream(path);
+         BufferedReader br = new BufferedReader(new InputStreamReader(is, java.nio.charset.StandardCharsets.UTF_8))) {
+        if (is == null) return "Dataset " + path + " not found.";
+        String line;
+        while ((line = br.readLine()) != null) {
+            content.append(line).append("\n");
+        }
+    } catch (Exception e) {
+        return "Error reading dataset.";
+    }
+    return content.toString();
+}
 }
