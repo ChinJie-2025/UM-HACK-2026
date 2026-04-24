@@ -107,42 +107,23 @@ public class MultiStrategyGenerator {
      * Assembles a human-readable strategy description string.
      * Format is fixed so that the UI / AnalysisController can parse or display it consistently.
      */
-    private String buildPlan(String level,
-                              String crop,
-                              double totalBudget,
-                              double fraction,
-                              double projectedImpact,
-                              int    adjustedRisk,
-                              double marketPricePerTon,
-                              String rationale) {
+    // Inside MultiStrategyGenerator.java
+private String buildPlan(String level, String crop, double totalBudget, double fraction, 
+                          double projectedImpact, int adjustedRisk, double marketPricePerTon, 
+                          String rationale) {
 
-        double capitalDeployed  = totalBudget * fraction;
-        double capitalReserved = Math.max(0, totalBudget - capitalDeployed);
-
-        // Estimated tonnes purchasable / producable given deployed capital
-        // (marketPricePerTon is the selling price, used as a proxy for production value)
-        double estimatedTonnes  = (marketPricePerTon > 0) ? capitalDeployed / marketPricePerTon : 0;
-
-        return String.format(
-                "[%s STRATEGY] "
-                + "Crop: %s | "
-                + "Budget Deployed: RM %.2f (%.0f%%) | "
-                + "Capital Reserved: RM %.2f | "
-                + "Est. Volume: %.2f tonnes | "
-                + "Projected Net Return: RM %.2f | "
-                + "Adjusted Risk Score: %d/10 | "
-                + "Rationale: %s",
-
-                level,
-                crop,
-                capitalDeployed, fraction * 100,
-                capitalReserved,
-                estimatedTonnes,
-                projectedImpact,
-                adjustedRisk,
-                rationale
-        );
-    }
+    // THIS STRING FORMAT IS THE "SOURCE OF TRUTH" FOR THE ENTIRE SYSTEM
+    return String.format(
+            "[%s STRATEGY] "
+            + "Crop: %s | "
+            + "Budget Deployed: RM %.2f (%.0f%%) | "
+            + "Projected Net Return: RM %.2f | " // <--- CRITICAL FOR SYNC
+            + "Adjusted Risk Score: %d/10 | "
+            + "Rationale: %s",
+            level, crop, (totalBudget * fraction), (fraction * 100), 
+            projectedImpact, adjustedRisk, rationale
+    );
+}
 
     /**
      * Searches the market data list for the recommended crop's selling price.
@@ -169,4 +150,6 @@ public class MultiStrategyGenerator {
     private void log(String level, String msg) {
         System.out.println("[" + level + "][MultiStrategyGenerator] " + msg);
     }
+
+    
 }

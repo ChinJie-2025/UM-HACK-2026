@@ -119,35 +119,45 @@
         </div>
     </div>
 
-    <div id="chat-view" class="hidden flex-1 h-full flex-col chat-bg relative">
-        <div class="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm shrink-0 z-10">
-            <div class="flex items-center gap-4">
-                <button onclick="showDashboard()" class="text-slate-400 hover:text-slate-700 transition-colors">
-                    <i data-lucide="arrow-left" class="w-6 h-6"></i>
-                </button>
-                <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-emerald-400 shadow-sm border border-slate-700">
-                    <i data-lucide="bot" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h2 class="font-bold text-slate-900 leading-tight">Z.AI Agronomist</h2>
-                    <p class="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Online
-                    </p>
-                </div>
-            </div>
+    <div id="chat-view" class="hidden flex-1 h-full flex bg-[#e6ecea]">
+    <div class="w-80 bg-white border-r border-slate-200 flex flex-col hidden md:flex">
+        <div class="p-4 bg-slate-900 text-white font-bold flex items-center gap-2">
+            <i data-lucide="message-square"></i> Z.AI Channels
         </div>
-        <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
-        <div class="bg-slate-100 p-4 shrink-0 border-t border-slate-200">
-            <div class="max-w-5xl mx-auto flex items-center gap-3">
-                <div class="flex-1 bg-white border border-slate-300 rounded-2xl px-4 py-2.5 flex items-center shadow-sm">
-                    <input type="text" id="chatInput" placeholder="Ask Z.AI for a strategy..." class="w-full bg-transparent border-none outline-none text-slate-700 text-sm" onkeypress="handleKeyPress(event)">
-                </div>
-                <button onclick="sendMessage()" class="w-12 h-12 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center text-white shadow-md">
-                    <i data-lucide="send-horizonal" class="w-5 h-5 ml-1"></i>
-                </button>
+        <div class="flex-1 overflow-y-auto p-2 space-y-2">
+            <p class="text-[10px] uppercase font-bold text-slate-400 px-3 mt-4">Suggested FAQs</p>
+            <button onclick="quickFaq('What is the weather risk?')" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 transition-all flex items-center gap-3 group">
+                <div class="bg-amber-100 p-2 rounded-lg text-amber-600"><i data-lucide="cloud-rain" class="w-4 h-4"></i></div>
+                <div><p class="text-sm font-bold">Weather Risk</p><p class="text-xs text-slate-400">Latest forecast</p></div>
+            </button>
+            <button onclick="quickFaq('Check my yield estimation')" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 transition-all flex items-center gap-3">
+                <div class="bg-emerald-100 p-2 rounded-lg text-emerald-600"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></div>
+                <div><p class="text-sm font-bold">Yield Analysis</p><p class="text-xs text-slate-400">Refers to CSV</p></div>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col relative">
+        <div class="bg-white/80 backdrop-blur p-4 border-b flex justify-between items-center shadow-sm">
+            <div class="flex items-center gap-3">
+                <button onclick="showDashboard()" class="md:hidden"><i data-lucide="menu"></i></button>
+                <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-emerald-400"><i data-lucide="bot"></i></div>
+                <div><h3 class="font-bold text-sm">Z.AI Assistant</h3><p class="text-[10px] text-emerald-500 font-bold tracking-widest">● ONLINE</p></div>
+            </div>
+            <button onclick="showDashboard()" class="text-xs font-bold text-slate-400 hover:text-slate-900">EXIT CHAT</button>
+        </div>
+
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 chat-bg">
+            </div>
+
+        <div class="p-4 bg-white/50 backdrop-blur border-t">
+            <div class="max-w-4xl mx-auto flex gap-3">
+                <input type="text" id="chatInput" placeholder="Message Z.AI..." class="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm" onkeypress="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()" class="bg-slate-900 text-white p-3 rounded-2xl hover:bg-emerald-600 transition-all shadow-lg"><i data-lucide="send"></i></button>
             </div>
         </div>
     </div>
+</div>
 
     <div id="plot-modal" class="fixed inset-0 bg-slate-900/60 hidden z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -202,7 +212,7 @@
     <script>
         lucide.createIcons();
 
-        // 1. MASTER RENDERER (Includes Click-to-Chat)
+        // 1. MASTER RENDERER: Makes cards clickable to open Z.AI
         function displayPlotCard(plotId, cropName, landSize, yieldVal, waterVal) {
             const grid = document.getElementById('plot-grid');
             const colors = ['emerald-500', 'blue-500', 'indigo-500', 'cyan-500'];
@@ -210,7 +220,7 @@
             
             const cardHTML = `
                 <div onclick="showChat('${cropName}')" class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden animate-fade-in cursor-pointer group">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-${randomColor} group-hover:h-2 transition-all"></div>
+                    <div class="absolute top-0 left-0 w-full h-1 bg-${randomColor} group-hover:h-2"></div>
                     <div class="p-6">
                         <div class="flex justify-between items-start mb-6">
                             <div>
@@ -223,11 +233,11 @@
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Est. Yield</p>
+                                <p class="text-[10px] uppercase font-bold text-slate-400">Est. Yield</p>
                                 <p class="text-sm font-bold text-slate-700">${yieldVal || '---'}</p>
                             </div>
                             <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Water Need</p>
+                                <p class="text-[10px] uppercase font-bold text-slate-400">Water Need</p>
                                 <p class="text-sm font-bold text-slate-700 truncate">${waterVal || '---'}</p>
                             </div>
                         </div>
@@ -237,39 +247,30 @@
             lucide.createIcons();
         }
 
-        // 2. LOAD SAMPLES & BACKEND DATA ON STARTUP
-       // 2. THE PERSISTENCE LOGIC (This runs on every refresh)
+        // 2. PERSISTENCE LOGIC: Runs every time you refresh
         window.onload = async function() {
-            // A. Keep your hardcoded samples for the demo
+            // Sample demo cards
             displayPlotCard("PLT-001", "Paddy (MR297)", 2.5, "4.2 MT", "Moderate");
             displayPlotCard("PLT-002", "Musang King", 5.0, "8.5 MT", "High");
             
-            // B. Fetch the real data from your Java CSV backend
             try {
                 const response = await fetch('/api/crops/all');
                 if (response.ok) {
                     const plots = await response.json();
-                    // This loops through your CSV data and draws a card for each row
                     plots.forEach(p => {
                         displayPlotCard(p.plotId, p.cropName, p.landSize, p.expectedYield, p.waterReq);
                     });
                 }
-            } catch (err) { 
-                console.warn("Could not sync with CSV database. Is the server running?"); 
-            }
+            } catch (err) { console.warn("Backend not reachable."); }
         };
 
-        // 3. SUBMISSION LOGIC
+        // 3. SUBMIT LOGIC: Fixes the "Sticky Info" bug
         async function submitPlot(event) {
             event.preventDefault();
-            const plotId = document.getElementById('plotId').value;
-            const cropName = document.getElementById('cropName').value;
-            const landSize = document.getElementById('landSize').value;
-            
             const payload = {
-                plotId, 
-                cropName, 
-                landSize: parseFloat(landSize),
+                plotId: document.getElementById('plotId').value,
+                cropName: document.getElementById('cropName').value,
+                landSize: parseFloat(document.getElementById('landSize').value),
                 plantingDate: document.getElementById('plantingDate').value,
                 gpsLocation: document.getElementById('gpsAddress').value
             };
@@ -281,14 +282,21 @@
                     body: JSON.stringify(payload)
                 });
                 const aiResult = await res.json();
+                
+                // BUG FIX: Reset form and close modal
                 closeModal();
-                displayPlotCard(plotId, cropName, landSize, aiResult.expectedYield, aiResult.waterReq);
+                document.getElementById('plot-form').reset();
+                document.getElementById('gpsAddress').value = "";
+                document.getElementById('map-container').classList.add('hidden');
+                
+                // Add card and switch to chat
+                displayPlotCard(payload.plotId, payload.cropName, payload.landSize, aiResult.expectedYield, aiResult.waterReq);
                 showToast("Registered to Ledger!");
-                setTimeout(() => showChat(cropName), 1500);
-            } catch (err) { alert("Backend offline."); }
+                setTimeout(() => showChat(payload.cropName), 1500);
+            } catch (err) { alert("Backend Error."); }
         }
 
-        // 4. GPS LOGIC (Original Version Kept)
+        // 4. GPS LOGIC (The version you liked)
         async function getLocationWithMap() {
             const addr = document.getElementById('gpsAddress');
             const mapC = document.getElementById('map-container');
@@ -296,8 +304,7 @@
             addr.value = "Locating satellite...";
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
+                    const lat = pos.coords.latitude; const lon = pos.coords.longitude;
                     document.getElementById('rawLat').value = lat;
                     document.getElementById('rawLon').value = lon;
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
@@ -309,50 +316,53 @@
             }
         }
 
-        // 5. VIEW TOGGLING & CHAT LOGIC
+        // VIEW HELPERS
         function openModal() { document.getElementById('plot-modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('plot-modal').classList.add('hidden'); }
-        function showDashboard() {
-            document.getElementById('chat-view').classList.add('hidden');
-            document.getElementById('dashboard-view').classList.remove('hidden');
+        function showDashboard() { 
+            document.getElementById('chat-view').classList.add('hidden'); 
+            document.getElementById('dashboard-view').classList.remove('hidden'); 
         }
-
-        function showChat(cropName) {
+        function showChat(crop) {
             document.getElementById('dashboard-view').classList.add('hidden');
             document.getElementById('chat-view').classList.remove('hidden');
             document.getElementById('chat-view').classList.add('flex');
-            const chatMessages = document.getElementById('chat-messages');
-            chatMessages.innerHTML = `<div class="flex items-end gap-3 mb-4">
-                <div class="bg-white p-4 rounded-2xl shadow-sm border text-sm">
-                    Uplink verified for <b>${cropName}</b>. How should we proceed with the risk analysis?
-                </div>
-            </div>`;
+            document.getElementById('chat-messages').innerHTML = `<div class="bg-white p-4 rounded-2xl border text-sm shadow-sm">Uplink verified for <b>${crop}</b>. Awaiting risk strategy request...</div>`;
         }
+        // FAQ Trigger
+function quickFaq(question) {
+    document.getElementById('chatInput').value = question;
+    sendMessage();
+}
 
-        async function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const msg = input.value.trim();
-            if (!msg) return;
-            document.getElementById('chat-messages').innerHTML += `<div class="flex justify-end mb-4"><div class="bg-emerald-600 text-white p-3 rounded-2xl text-sm">${msg}</div></div>`;
-            input.value = '';
-            try {
-                const res = await fetch('/api/crops/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg})});
-                const data = await res.json();
-                setTimeout(() => appendAIResponse(data.reply), 500);
-            } catch(e) { appendAIResponse("Uplink error."); }
-        }
+// Telegram-Style Send
+async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
 
-        function appendAIResponse(html) {
-            document.getElementById('chat-messages').innerHTML += `<div class="flex items-end gap-3 mb-4"><div class="bg-white p-4 rounded-2xl shadow-sm border text-sm">${html}</div></div>`;
-        }
+    const chatBox = document.getElementById('chat-messages');
+    // User Bubble
+    chatBox.innerHTML += `<div class="flex justify-end mb-2 animate-fade-in"><div class="bg-slate-900 text-white px-4 py-2 rounded-2xl rounded-tr-none text-sm shadow-md">${msg}</div></div>`;
+    input.value = "";
+    chatBox.scrollTop = chatBox.scrollHeight;
 
-        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
-            t.classList.remove('opacity-0', '-translate-y-10');
-            setTimeout(() => t.classList.add('opacity-0', '-translate-y-10'), 3000);
-        }
+    try {
+        const res = await fetch('/api/crops/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        
+        // AI Bubble
+        setTimeout(() => {
+            chatBox.innerHTML += `<div class="flex justify-start mb-2 animate-fade-in"><div class="bg-white text-slate-800 px-4 py-2 rounded-2xl rounded-tl-none text-sm shadow-md border border-slate-100">${data.reply}</div></div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            lucide.createIcons();
+        }, 600);
+    } catch(e) { console.error("Uplink lost."); }
+}
     </script>
 </body>
 </html>

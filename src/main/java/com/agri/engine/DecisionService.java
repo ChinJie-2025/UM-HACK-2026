@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 /**
@@ -95,47 +96,51 @@ public class DecisionService {
      * @return               A complete AnalysisResult with rationale + 3 strategies.
      * @throws IOException   If the GLM API call fails (network error or non-2xx response).
      */
-    public AnalysisResult analyze(FarmerProfile profile,
-                                   List<CropData> marketData,
-                                   String weatherContext) throws IOException {
-
-        log("INFO", "=== Decision pipeline started for: " + profile.getLocation() + " ===");
-
-        // ── Step 1: Build the context-aware prompt ────────────────────────────────
-        log("INFO", "Step 1/4 – Building prompt...");
-        String prompt = promptBuilder.build(profile, marketData, weatherContext);
-
-        // ── Step 2: Call the GLM API ──────────────────────────────────────────────
-        log("INFO", "Step 2/4 – Calling GLM API...");
-        String rawAiResponse = glmClient.call(prompt);
-
-        // ── Step 3: Parse rationale into AnalysisResult ───────────────────────────
-        log("INFO", "Step 3/4 – Parsing AI rationale...");
-        AnalysisResult result = rationaleGenerator.parse(rawAiResponse);
-        log("INFO", "Recommended crop: " + result.getRecommendedCrop()
-                + " | Risk: " + result.getRiskScore()
-                + "/10 | Impact: RM" + String.format("%.2f", result.getEconomicImpact()));
-
-        // ── Step 4: Generate the three strategies ─────────────────────────────────
-        log("INFO", "Step 4/4 – Generating Conservative / Balanced / Aggressive strategies...");
-        Map<String, String> strategies = strategyGenerator.generate(result, profile, marketData);
-
-        // Attach the strategy map to the result.
-        // REQUIRES setStrategyBreakdown() to be added to AnalysisResult – see class Javadoc above.
-        result.setStrategyBreakdown(strategies);
-
-        log("INFO", "=== Decision pipeline complete ===");
-        return result;
-    }
+    // Inside DecisionService.java
+public AnalysisResult analyze(FarmerProfile profile, List<CropData> marketData, String weatherContext) throws IOException {
+    // 1. Build prompt
+    String prompt = promptBuilder.build(profile, marketData, weatherContext);
+    
+    // 2. Call GLM
+    String rawResponse = glmClient.call(prompt);
+    
+    // 3. Parse and generate strategies
+    AnalysisResult result = rationaleGenerator.parse(rawResponse);
+    Map<String, String> strategies = strategyGenerator.generate(result, profile, marketData);
+    
+    // 4. Attach strategies so plot data is available
+    result.setStrategyBreakdown(strategies);
+    
+    return result;
+}
 
     private void log(String level, String msg) {
         System.out.println("[" + level + "][DecisionService] " + msg);
     }
-    
+    public Map<String, Object> getAnalysisWithGraph(FarmerProfile profile, List<CropData> market, String weather) throws IOException {
+    // 1. Run the existing Z.AI pipeline
+    AnalysisResult result = analyze(profile, market, weather);
+
+    // 2. Prepare the response packet
+    Map<String, Object> response = new HashMap<>();
+    response.put("textReasoning", result.getReasoning());
+    response.put("recommendedCrop", result.getRecommendedCrop());
+    response.put("graphData", result.getPlotData()); // The numeric values for the Y-axis
+    response.put("labels", result.getPlotData().keySet()); // The strategy names for the X-axis
+
+    return response;
+}
     public String processNaturalLanguage(String userMessage) {
-        // 1. You might call PromptBuilder here
-        // 2. Call GlmClient to get AI response
-        // For now, let's return a test string to stop the error:
-        return "AI is processing your message: " + userMessage;
+    try {
+        // Create a simple chat-focused prompt
+        String chatPrompt = "You are a helpful Malaysian agricultural assistant. " +
+                            "Answer the following farmer's question concisely: " + userMessage;
+        
+        // Reuse the GlmClient logic
+        return glmClient.call(chatPrompt);
+    } catch (IOException e) {
+        log("ERROR", "Chat processing failed: " + e.getMessage());
+        return "I'm sorry, I'm having trouble connecting to my brain right now. Please try again.";
     }
+}
 }

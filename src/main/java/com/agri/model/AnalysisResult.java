@@ -1,10 +1,12 @@
 package com.agri.model;
 
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher; // Required for regex processing
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class AnalysisResult {
-    // 1. Fields
     private String recommendedCrop;
     private String recommendedStrategy;
     private String reasoning;
@@ -12,22 +14,8 @@ public class AnalysisResult {
     private double economicImpact;
     private Map<String, String> strategyBreakdown;
 
-    // 2. Default Constructor
     public AnalysisResult() {
-        // Initialize the map to prevent NullPointerExceptions later
         this.strategyBreakdown = new HashMap<>();
-    }
-
-    // 3. Fully-Loaded Constructor
-    // It's best practice to include all core fields here
-    public AnalysisResult(String recommendedCrop, String recommendedStrategy, String reasoning, 
-                          int riskScore, double economicImpact, Map<String, String> strategyBreakdown) {
-        this.recommendedCrop = recommendedCrop;
-        this.recommendedStrategy = recommendedStrategy;
-        this.reasoning = reasoning;
-        this.riskScore = riskScore;
-        this.economicImpact = economicImpact;
-        this.strategyBreakdown = strategyBreakdown;
     }
 
     public AnalysisResult(String recommendedCrop, String reasoning, int riskScore, double economicImpact) {
@@ -35,36 +23,44 @@ public class AnalysisResult {
         this.reasoning = reasoning;
         this.riskScore = riskScore;
         this.economicImpact = economicImpact;
-
-        // initialize defaults for fields not provided yet
-        this.recommendedStrategy = "Balanced"; // or null
+        this.recommendedStrategy = "Balanced"; 
         this.strategyBreakdown = new HashMap<>();
     }
 
-    // 4. Getters and Setters
-    // Every private field should generally have a way to be accessed/modified
-    
+    /**
+     * Extracts numeric values for graph plotting.
+     * This matches the format: "Projected Net Return: RM 123.45"
+     */
+   // Inside AnalysisResult.java
+// AnalysisResult.java
+public Map<String, Double> getPlotData() {
+    Map<String, Double> plotData = new LinkedHashMap<>(); //
+    if (this.strategyBreakdown == null) return plotData; //
+
+    // This regex looks for digits and a decimal point after the RM prefix
+    Pattern p = Pattern.compile("Projected Net Return: RM ([\\d,]+\\.?\\d*)");
+
+    this.strategyBreakdown.forEach((name, description) -> {
+        Matcher m = p.matcher(description);
+        if (m.find()) {
+            plotData.put(name, Double.parseDouble(m.group(1))); //
+        }
+    });
+    return plotData;
+}
+
+    // Standard Getters and Setters
     public String getRecommendedCrop() { return recommendedCrop; }
     public void setRecommendedCrop(String recommendedCrop) { this.recommendedCrop = recommendedCrop; }
-
-    public String getRecommendedStrategy() { return recommendedStrategy; }
-    public void setRecommendedStrategy(String recommendedStrategy) { this.recommendedStrategy = recommendedStrategy; }
-
     public String getReasoning() { return reasoning; }
     public void setReasoning(String reasoning) { this.reasoning = reasoning; }
-
     public int getRiskScore() { return riskScore; }
     public void setRiskScore(int riskScore) { this.riskScore = riskScore; }
-
     public double getEconomicImpact() { return economicImpact; }
     public void setEconomicImpact(double economicImpact) { this.economicImpact = economicImpact; }
-
     public Map<String, String> getStrategyBreakdown() { return strategyBreakdown; }
     public void setStrategyBreakdown(Map<String, String> strategyBreakdown) { this.strategyBreakdown = strategyBreakdown; }
-
-    // 5. Helper Method (Optional but useful)
-    @Override
-    public String toString() {
-        return "Analysis for " + recommendedCrop + " (Risk: " + riskScore + "/10)";
-    }
-}
+    public String getRecommendedStrategy() { return recommendedStrategy; }
+    public void setRecommendedStrategy(String recommendedStrategy) { 
+     this.recommendedStrategy = recommendedStrategy; 
+}}

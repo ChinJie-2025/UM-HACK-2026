@@ -20,64 +20,86 @@ public class AgriwiseApplication {
         SpringApplication.run(AgriwiseApplication.class, args);
         System.out.println("🚀 AGRI-ANALYST BACKEND IS RUNNING!");
     }
+    
+    @PostMapping("/chat")
+public ResponseEntity<Map<String, String>> handleChat(@RequestBody Map<String, String> payload) {
+    String userMsg = payload.get("message").toLowerCase();
+    String response = "I'm analyzing your request...";
 
-    // 1. REGISTER NEW PLOT
+    // FAQ LOGIC
+    if (userMsg.contains("weather")) {
+        response = "Z.AI Alert: Monsoon patterns detected near Universiti Malaya. Check your drainage.";
+    } else if (userMsg.contains("yield")) {
+        // Z.AI refers to the file
+        String plotData = getPlotDataSummary();
+        response = "Based on your ledger: " + plotData + ". Overall yield is stable.";
+    } else {
+        response = "I've reviewed your plot info. We should apply a balanced nutrient strategy today.";
+    }
+
+    Map<String, String> res = new HashMap<>();
+    res.put("reply", response);
+    return ResponseEntity.ok(res);
+}
+
+// Z.AI refers to the file
+private String getPlotDataSummary() {
+    try (BufferedReader br = new BufferedReader(new FileReader("crop_database.csv"))) {
+        String line = br.readLine(); // Just get the first/latest plot info
+        if (line != null) return "Active Plot: " + line.split(",")[1];
+    } catch (Exception e) { return "No active plots found"; }
+    return "No data";
+}
+
+    // 1. Updated Register: Returns the AI values needed for the card
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> registerPlot(@RequestBody Map<String, Object> payload) {
         saveToCsv(payload);
-        
-        Map<String, Object> aiResponse = new HashMap<>();
-        aiResponse.put("expectedYield", payload.get("cropName").toString().contains("Durian") ? "8.5 MT" : "4.2 MT");
-        aiResponse.put("waterReq", "Moderate (Optimized)");
-        return ResponseEntity.ok(aiResponse);
+        Map<String, Object> ai = new HashMap<>();
+        ai.put("expectedYield", "4.2 MT/Acre"); // Static demo data
+        ai.put("waterReq", "Moderate");
+        return ResponseEntity.ok(ai);
     }
 
-    // 2. FETCH ALL PLOTS (Persistence Logic)
-    // This allows the website to "ask" for all the data in the CSV
+    // 2. Updated Loader: Strictly reads the 4 columns you enter in the UI
     @GetMapping("/all")
     public ResponseEntity<List<Map<String, String>>> getAllPlots() {
         List<Map<String, String>> plots = new ArrayList<>();
-        File file = new File(CSV_FILE_PATH);
+        File file = new File("crop_database.csv");
         
         if (!file.exists()) return ResponseEntity.ok(plots);
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] values = line.split(",");
-                // Basic check to ensure we have PlotID, Crop, Size, and Date
-                if (values.length >= 4) {
-                    Map<String, String> plot = new HashMap<>();
-                    plot.put("plotId", values[0]);
-                    plot.put("cropName", values[1]);
-                    plot.put("landSize", values[2]);
-                    plot.put("plantingDate", values[3]);
-                    // We give these default values because CSV only has basic data
-                    plot.put("expectedYield", "Synced"); 
-                    plot.put("waterReq", "Optimized");
-                    plots.add(plot);
+                String[] v = line.split(",");
+                // We match the 4 columns: PlotID, CropName, LandSize, Date
+                if (v.length >= 4) {
+                    Map<String, String> p = new HashMap<>();
+                    p.put("plotId", v[0].trim());
+                    p.put("cropName", v[1].trim());
+                    p.put("landSize", v[2].trim());
+                    p.put("plantingDate", v[3].trim());
+                    // Static demo values for the AI analytics
+                    p.put("expectedYield", "4.2 MT/Acre"); 
+                    p.put("waterReq", "Moderate");
+                    plots.add(p);
                 }
             }
         } catch (IOException e) {
-            System.err.println("❌ Error reading CSV: " + e.getMessage());
+            e.printStackTrace();
         }
         return ResponseEntity.ok(plots);
     }
 
-    // 3. AI CHAT ENDPOINT
-    @PostMapping("/chat")
-    public ResponseEntity<Map<String, String>> handleChat(@RequestBody Map<String, String> payload) {
-        String msg = payload.get("message").toLowerCase();
-        String reply = msg.contains("aggressive") ? "<b>Aggressive Plan:</b> Increase NPK by 15%." : "<b>Analysis:</b> Soil moisture is optimal.";
-        
-        Map<String, String> response = new HashMap<>();
-        response.put("reply", reply);
-        return ResponseEntity.ok(response);
-    }
-
+    // 3. Updated CSV Writer: Ensures clean formatting
     private void saveToCsv(Map<String, Object> plot) {
-        try (FileWriter fw = new FileWriter(CSV_FILE_PATH, true); PrintWriter pw = new PrintWriter(fw)) {
-            pw.printf("%s,%s,%s,%s%n", plot.get("plotId"), plot.get("cropName"), plot.get("landSize"), plot.get("plantingDate"));
+        try (FileWriter fw = new FileWriter("crop_database.csv", true); 
+             PrintWriter pw = new PrintWriter(fw)) {
+            pw.println(plot.get("plotId") + "," + 
+                       plot.get("cropName") + "," + 
+                       plot.get("landSize") + "," + 
+                       plot.get("plantingDate"));
         } catch (IOException e) { e.printStackTrace(); }
     }
 }
