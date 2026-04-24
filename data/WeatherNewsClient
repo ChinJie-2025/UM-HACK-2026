@@ -1,0 +1,59 @@
+package data;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+
+/**
+ * Handles unstructured data ingestion.
+ * Reads raw text headlines to provide the 'Why' behind AI recommendations.
+ */
+public class WeatherNewsClient {
+
+    private static final String NEWS_PATH = "/field_intelligence.txt";
+    private final Random random = new Random();
+
+    public String fetchUnstructuredContext(String region) {
+        List<String> allNews = new ArrayList<>();
+
+        // 1. Read the unstructured text file from resources
+        InputStream is = getClass().getResourceAsStream(NEWS_PATH);
+        
+        if (is == null) {
+            return "--- LATEST UNSTRUCTURED FIELD INTELLIGENCE ---\nNo news data available for " + region;
+        }
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (!line.trim().isEmpty()) {
+                    allNews.add(line.trim());
+                }
+            }
+        } catch (IOException e) {
+            return "--- ERROR ---\nFailed to read news feed.";
+        }
+
+        // 2. Select a subset of news to keep the prompt focused
+        Collections.shuffle(allNews);
+        List<String> selectedNews = allNews.subList(0, Math.min(3, allNews.size()));
+
+        // 3. Build the context string
+        StringBuilder contextBuilder = new StringBuilder();
+        contextBuilder.append("--- LATEST UNSTRUCTURED FIELD INTELLIGENCE ---\n");
+        contextBuilder.append("Target Region: ").append(region).append("\n");
+        contextBuilder.append("Timestamp: ").append(java.time.LocalDateTime.now()).append("\n\n");
+
+        for (String update : selectedNews) {
+            contextBuilder.append("- ").append(update).append("\n");
+        }
+
+        return contextBuilder.toString();
+    }
+}

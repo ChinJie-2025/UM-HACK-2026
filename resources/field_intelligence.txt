@@ -1,0 +1,8 @@
+[WEATHER][RISK=HIGH] MET Malaysia issues Level 1 (Caution) heatwave alert for Northern Peninsula states.
+[POLICY][CROP=PADDY][IMPACT=POSITIVE] Government increases floor price of paddy to RM1,300 per metric tonne.
+[MARKET][CROP=DURIAN][IMPACT=NEGATIVE] Oversupply of Musang King in Johor leads to 20% price drop.
+[DISEASE][CROP=CHILI][RISK=MEDIUM] High humidity in Selangor increasing risk of anthracnose (bintik berair) in chili plots.
+[POLICY][IMPACT=POSITIVE] New RM50 million grant announced for young agropreneurs adopting IoT systems.
+[LOGISTICS][RISK=LOW] Improved cargo clearance times at Port Klang benefiting fruit exporters.
+[WEATHER][RISK=MEDIUM] Monsoon transition phase expected to bring evening thunderstorms to West Coast districts.
+[MARKET][CROP=PINEAPPLE][IMPACT=POSITIVE] Export demand for MD2 pineapple from China reaches record high.

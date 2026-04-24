@@ -1,0 +1,141 @@
+package data;
+
+import com.agri.model.CropData;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Handles structured data ingestion from local CSV files.
+ * Provides clean, validated economic data for AI decision-making.
+ */
+public class MarketDataClient {
+
+    private static final String CSV_PATH = "/AgriWise_Crop_Da.csv";
+
+    // Optional system-awareness tracking
+    private boolean usingFallback = false;
+    private int skippedRows = 0;
+
+    public List<CropData> fetchCurrentMarketPrices() {
+        List<CropData> cropList = new ArrayList<>();
+        skippedRows = 0;
+        usingFallback = false;
+
+        InputStream is = getClass().getResourceAsStream(CSV_PATH);
+
+        if (is == null) {
+            log("ERROR", CSV_PATH + " not found in resources.");
+            usingFallback = true;
+            return getFallbackData();
+        }
+
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(is, StandardCharsets.UTF_8))) {
+
+            // Skip header
+            String header = br.readLine();
+            if (header == null) {
+                log("ERROR", "CSV file is empty.");
+                usingFallback = true;
+                return getFallbackData();
+            }
+
+            String line;
+            while ((line = br.readLine()) != null) {
+
+                if (line.trim().isEmpty()) continue;
+
+                String[] values = line.split(",");
+
+                // Structural validation
+                if (values.length < 4) {
+                    skippedRows++;
+                    log("WARN", "Skipping malformed row: " + line);
+                    continue;
+                }
+
+                String name = values[0].trim();
+
+                Double price = tryParseDouble(values[1]);
+                Double yield = tryParseDouble(values[2]);
+                Double water = tryParseDouble(values[3]);
+
+                // Numeric validation
+                if (price == null || yield == null || water == null) {
+                    skippedRows++;
+                    log("WARN", "Skipping invalid numeric row: " + line);
+                    continue;
+                }
+
+                // Domain validation
+                if (price < 0 || yield < 0 || water < 0) {
+                    skippedRows++;
+                    log("WARN", "Skipping invalid domain row: " + line);
+                    continue;
+                }
+
+                cropList.add(new CropData(name, price, yield, water));
+            }
+
+        } catch (IOException e) {
+            log("ERROR", "File read error: " + e.getMessage());
+            usingFallback = true;
+            return getFallbackData();
+        }
+
+        log("INFO", "Loaded " + cropList.size() + " crops. Skipped rows: " + skippedRows);
+
+        return cropList;
+    }
+
+    /**
+     * Attempts to parse a Double safely.
+     * Returns null if parsing fails.
+     */
+    private Double tryParseDouble(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        try {
+            return Double.parseDouble(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Simple logging utility
+     */
+    private void log(String level, String msg) {
+        System.out.println("[" + level + "][MarketDataClient] " + msg);
+    }
+
+    /**
+     * Fallback dataset to prevent system failure
+     */
+    private List<CropData> getFallbackData() {
+        log("INFO", "Using fallback (simulated) market data.");
+
+        List<CropData> fallback = new ArrayList<>();
+        fallback.add(new CropData("Chili", 12.50, 500, 0.8));
+        fallback.add(new CropData("Ginger", 8.00, 1200, 0.4));
+        fallback.add(new CropData("Corn", 4.50, 2000, 0.5));
+
+        return fallback;
+    }
+
+    /**
+     * Optional getters for system-level monitoring
+     */
+    public boolean isUsingFallback() {
+        return usingFallback;
+    }
+
+    public int getSkippedRows() {
+        return skippedRows;
+    }
+}
