@@ -1,4 +1,4 @@
-package src.main.java.com.agri.model;
+package com.agri.model;
 
 import java.time.LocalDate;
 
@@ -9,15 +9,21 @@ public class CropPlot {
     private double landSize;
     private LocalDate plantingDate;
     private double plotBudget;
+    // GPS tracking coordinates
+    private double latitude;
+    private double longitude;
 
     // Constructor
-    public CropPlot(String plotId, String cropName, String address, double landSize, LocalDate plantingDate,double plotBudget) {
+    public CropPlot(String plotId, String cropName, String address, double landSize, 
+                    LocalDate plantingDate, double plotBudget, double latitude, double longitude) {
         this.plotId = plotId;
         this.cropName = cropName;
         this.address = address;
         this.landSize = landSize;
         this.plantingDate = plantingDate;
         this.plotBudget = plotBudget;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     // Getters and Setters
@@ -28,6 +34,12 @@ public class CropPlot {
     public void setCropName(String cropName) { this.cropName = cropName; }
 
 
+    // Getters and Setters for GPS
+    public double getLatitude() { return latitude; }
+    public void setLatitude(double latitude) { this.latitude = latitude; }
+
+    public double getLongitude() { return longitude; }
+    public void setLongitude(double longitude) { this.longitude = longitude; }
     public double getPlotBudget() { return plotBudget; }
     public void setPlotBudget(double budget) { this.plotBudget = budget; }
 

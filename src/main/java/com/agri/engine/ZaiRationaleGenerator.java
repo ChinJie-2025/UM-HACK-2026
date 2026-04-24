@@ -1,6 +1,6 @@
 package com.agri.engine;
 
-import src.main.java.com.agri.model.AnalysisResult;
+import com.agri.model.AnalysisResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
