@@ -3,11 +3,13 @@ package com.agri.engine;
 import com.agri.model.AnalysisResult;
 import com.agri.model.CropData;
 import com.agri.model.FarmerProfile;
+import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 /**
  * Part 4 - Decision Core
  *
@@ -63,6 +65,7 @@ import java.util.Map;
  *
  *   AnalysisResult result = service.analyze(profile, market, weather);
  */
+@Service
 public class DecisionService {
 
     private final PromptBuilder          promptBuilder;
@@ -75,7 +78,7 @@ public class DecisionService {
      *
      * @param glmApiKey Your Z.AI API key. Retrieve from AppConfig – never hardcode.
      */
-    public DecisionService(String glmApiKey) {
+    public DecisionService(@Value("${zai.api.key:mock_key_for_hackathon}")String glmApiKey) {
         this.promptBuilder      = new PromptBuilder();
         this.glmClient          = new GlmClient(glmApiKey);
         this.rationaleGenerator = new ZaiRationaleGenerator();
@@ -127,5 +130,12 @@ public class DecisionService {
 
     private void log(String level, String msg) {
         System.out.println("[" + level + "][DecisionService] " + msg);
+    }
+    
+    public String processNaturalLanguage(String userMessage) {
+        // 1. You might call PromptBuilder here
+        // 2. Call GlmClient to get AI response
+        // For now, let's return a test string to stop the error:
+        return "AI is processing your message: " + userMessage;
     }
 }
