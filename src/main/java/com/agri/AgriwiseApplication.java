@@ -133,9 +133,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.agri.service.ZAIService;
+import com.agri.ledger.DecisionLogger;
+import com.agri.model.AnalysisResult;
+import com.agri.model.CropData;
+import com.agri.model.CropPlot;
+import com.agri.model.FarmerProfile;
+import com.agri.model.SimulationRequest;
+import com.agri.sandbox.SimulationController;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
+import java.time.LocalDate;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -153,6 +161,11 @@ public class AgriwiseApplication {
     @Autowired
     private ZAIService zaiService;
 
+    @Autowired
+    private SimulationController simulationController;
+
+    private final DecisionLogger decisionLogger = new DecisionLogger();
+
     @PostMapping("/chat")
     public ResponseEntity<Map<String, String>> handleChat(@RequestBody Map<String, String> payload) {
         String userMsg = payload.getOrDefault("message", "");
@@ -165,10 +178,90 @@ public class AgriwiseApplication {
         // Call AI instead of manual logic
         String aiReply = zaiService.getAIResponse(userMsg, crop, market, news);
 
+        AnalysisResult analysisResult = new AnalysisResult();
+        analysisResult.setRecommendedCrop(crop);
+        analysisResult.setReasoning(aiReply);
+        String recommendationId = decisionLogger.log("Tan Winny", analysisResult);
+
         Map<String, String> response = new HashMap<>();
         response.put("reply", aiReply);
+        response.put("recommendationId", recommendationId);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/simulate")
+    public ResponseEntity<?> runSimulation(@RequestBody SimulationRequest request) {
+        try {
+            FarmerProfile profile = buildProfileFromCsv();
+            List<CropData> marketData = List.of(
+                    new CropData("Paddy", 1800, 4.2, 4500),
+                    new CropData("Corn", 1200, 3.6, 3200),
+                    new CropData("Durian", 2400, 2.3, 5100)
+            );
+
+            simulationController.setSessionData(profile, marketData, "Normal field conditions");
+            AnalysisResult result = simulationController.handleSimulationRequest(request);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("recommendedCrop", result.getRecommendedCrop());
+            response.put("reasoning", result.getReasoning());
+            response.put("riskScore", result.getRiskScore());
+            response.put("economicImpact", result.getEconomicImpact());
+            response.put("strategyBreakdown", result.getStrategyBreakdown());
+            response.put("plotData", result.getPlotData());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "error", "Simulation failed",
+                    "details", e.getMessage()
+            ));
+        }
+    }
+
+    private FarmerProfile buildProfileFromCsv() {
+        FarmerProfile profile = new FarmerProfile("Tan Winny", "Balanced");
+        File file = new File("crop_database.csv");
+
+        if (!file.exists()) {
+            profile.addPlot(new CropPlot("PLT-DEFAULT", "Paddy", "Default Farm", 2.5,
+                    LocalDate.now(), 10000, 3.1390, 101.6869));
+            return profile;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            br.readLine(); // header
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] v = line.split(",");
+                if (v.length >= 4) {
+                    String plotId = v[0].trim();
+                    String cropName = v[1].trim();
+                    double landSize = parseDouble(v[2].trim(), 1.0);
+                    LocalDate date = parseDate(v[3].trim(), LocalDate.now());
+                    profile.addPlot(new CropPlot(plotId, cropName, "Registered Plot", landSize,
+                            date, 10000 * landSize, 3.1390, 101.6869));
+                }
+            }
+        } catch (Exception ignored) {
+            profile.addPlot(new CropPlot("PLT-DEFAULT", "Paddy", "Fallback Farm", 2.5,
+                    LocalDate.now(), 10000, 3.1390, 101.6869));
+        }
+
+        if (profile.getMyPlots().isEmpty()) {
+            profile.addPlot(new CropPlot("PLT-DEFAULT", "Paddy", "Fallback Farm", 2.5,
+                    LocalDate.now(), 10000, 3.1390, 101.6869));
+        }
+
+        return profile;
+    }
+
+    private double parseDouble(String value, double defaultValue) {
+        try { return Double.parseDouble(value); } catch (Exception e) { return defaultValue; }
+    }
+
+    private LocalDate parseDate(String value, LocalDate defaultValue) {
+        try { return LocalDate.parse(value); } catch (Exception e) { return defaultValue; }
     }
 
     private String getPlotDataSummary() {

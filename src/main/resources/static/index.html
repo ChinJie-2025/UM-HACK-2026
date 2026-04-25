@@ -163,7 +163,6 @@
                                 <th class="p-3 font-bold">Crop</th>
                                 <th class="p-3 font-bold">AI Strategy</th>
                                 <th class="p-3 font-bold">Your Action</th>
-                                <th class="p-3 font-bold">Projected (RM)</th>
                             </tr>
                         </thead>
                         <tbody id="ledger-table-body" class="text-sm divide-y divide-slate-100">
@@ -192,15 +191,25 @@
         </h3>
         <button onclick="toggleSandbox()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
-    <div class="grid grid-cols-2 gap-4 mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Cost Modifier</p>
-            <p class="text-sm font-bold text-slate-700">+20% Fertilizer</p>
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Fertilizer Cost</p>
+                <p id="fertilizer-value" class="text-xs font-bold text-slate-700">1.20x</p>
+            </div>
+            <input id="fertilizer-slider" type="range" min="0.8" max="1.5" step="0.05" value="1.20" class="w-full">
         </div>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Environment</p>
-            <p class="text-sm font-bold text-slate-700">Severe Drought</p>
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Labor Availability</p>
+                <p id="labor-value" class="text-xs font-bold text-slate-700">0.80x</p>
+            </div>
+            <input id="labor-slider" type="range" min="0.5" max="1.2" step="0.05" value="0.80" class="w-full">
         </div>
+    </div>
+    <div class="mb-4">
+        <label class="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Environment Overlay</label>
+        <input id="environment-context" type="text" value="Severe Drought Overlay" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
     </div>
     <button onclick="runSandboxSimulation()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
         <i data-lucide="play" class="w-4 h-4"></i> Run Analysis
@@ -418,6 +427,7 @@
             });
             const data = await res.json();
             hideLoading();
+            currentRecommendationId = data.recommendationId || null;
             appendAIResponse(data.reply);
             if (data.reply.toLowerCase().includes("plan") || 
                 data.reply.toLowerCase().includes("strategy") || 
@@ -428,9 +438,6 @@
             hideLoading();
             appendAIResponse("⚠️ Error connecting to Z.AI Engine. Please ensure your backend is running.");
         }
-        const data = await res.json();
-    currentRecommendationId = data.recommendationId; // Capture the UUID from the backend
-    appendAIResponse(data.reply);
     }
 
     function appendUserMessage(msg) {
@@ -469,6 +476,7 @@
     window.onload = async function() {
         displayPlotCard("PLT-001", "Paddy (MR297)", 2.5, "4.2 MT", "Moderate");
         displayPlotCard("PLT-002", "Musang King", 5.0, "8.5 MT", "High");
+        bindSandboxControls();
     };
     // ==========================================
 // 5. DECISION SANDBOX LOGIC
@@ -478,21 +486,33 @@ function toggleSandbox() {
     panel.classList.toggle('hidden');
 }
 
-async function runSandboxSimulation() {
-    showLoading(); // Reuse your existing loading indicator
-    
-    const payload = {
-        modifiers: { "fertilizerCost": 1.20, "laborAvailability": 0.80 },
-        environmentalContext: "Severe Drought Overlay"
-    };
+function bindSandboxControls() {
+    const fertilizer = document.getElementById('fertilizer-slider');
+    const labor = document.getElementById('labor-slider');
+    const fertilizerValue = document.getElementById('fertilizer-value');
+    const laborValue = document.getElementById('labor-value');
 
-    async function runSandboxSimulation() {
-    showLoading(); // Triggers the "Z.AI is thinking..." indicator
-    
-    // These modifiers map to your Java SimulationRequest.java
+    if (fertilizer && fertilizerValue) {
+        fertilizer.addEventListener('input', () => fertilizerValue.textContent = `${Number(fertilizer.value).toFixed(2)}x`);
+    }
+    if (labor && laborValue) {
+        labor.addEventListener('input', () => laborValue.textContent = `${Number(labor.value).toFixed(2)}x`);
+    }
+}
+
+async function runSandboxSimulation() {
+    showLoading();
+
+    const fertilizerCost = Number(document.getElementById('fertilizer-slider')?.value || 1.2);
+    const laborAvailability = Number(document.getElementById('labor-slider')?.value || 0.8);
+    const environmentalContext = document.getElementById('environment-context')?.value?.trim() || 'No environmental overlay';
+
     const payload = {
-        modifiers: { "budget_multiplier": 1.20 }, // Example: +20% budget
-        environmentalContext: "Severe Drought Overlay" //
+        modifiers: {
+            fertilizerCost,
+            laborAvailability
+        },
+        environmentalContext
     };
 
     try {
@@ -502,22 +522,33 @@ async function runSandboxSimulation() {
             body: JSON.stringify(payload)
         });
 
-        if (!res.ok) throw new Error("Backend Simulation Failed");
+        if (!res.ok) throw new Error('Backend Simulation Failed');
 
         const data = await res.json();
-        
-        hideLoading(); // Stops the spinner so the UI becomes interactive again
-        toggleSandbox(); // Closes the "Simulation Controls" panel
+        hideLoading();
+        toggleSandbox();
 
-        // Displays the hypothetical AI Rationale in the chat
-        appendAIResponse(`### 🧪 Sandbox Result\n**Scenario:** +20% Budget & Drought\n\n${data.reasoning}`);
-        
+        appendAIResponse(
+            `### 🧪 Sandbox Result
+` +
+            `**Scenario:** Fertilizer ${fertilizerCost.toFixed(2)}x, Labor ${laborAvailability.toFixed(2)}x, Env: ${environmentalContext}
+
+` +
+            `**Hypothetical Recommendation:** ${data.recommendedCrop || 'N/A'}
+` +
+            `**Risk Score:** ${data.riskScore ?? 'N/A'}
+` +
+            `**Estimated Impact:** RM ${Number(data.economicImpact || 0).toFixed(2)}
+
+` +
+            `${data.reasoning || 'No reasoning returned.'}`
+        );
     } catch (err) {
-        hideLoading(); // Critical: prevent permanent "Thinking" state on error
-        appendAIResponse("⚠️ **Sandbox Error:** The simulation engine is currently unresponsive.");
+        hideLoading();
+        appendAIResponse('⚠️ **Sandbox Error:** The simulation engine is currently unresponsive.');
         console.error(err);
     }
-    }}
+}
 
     // ==========================================
     // 5. DECISION LEDGER LOGIC
@@ -529,13 +560,13 @@ async function runSandboxSimulation() {
     async function openLedgerHistory() {
         document.getElementById('ledger-modal').classList.remove('hidden');
         const tbody = document.getElementById('ledger-table-body');
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i> Loading...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i> Loading...</td></tr>`;
         lucide.createIcons();
         try {
             const res = await fetch('/api/ledger/all');
             const entries = await res.json();
             if (entries.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No decisions logged yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">No decisions logged yet.</td></tr>`;
                 return;
             }
             tbody.innerHTML = entries.map(entry => {
@@ -550,11 +581,10 @@ async function runSandboxSimulation() {
                         <td class="p-3 font-bold text-slate-700">${entry.recommendedCrop}</td>
                         <td class="p-3 text-xs italic text-slate-600">${(entry.reasoning || entry.recommendedStrategy || '—').substring(0, 60)}...</td>
                         <td class="p-3">${chosen}</td>
-                        <td class="p-3 font-mono text-emerald-600 font-bold">${entry.projectedEconomicImpact || '0.00'}</td>
                     </tr>`;
             }).join('');
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-500 font-bold">Error loading ledger data. Is the backend running?</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-500 font-bold">Error loading ledger data. Is the backend running?</td></tr>`;
         }
     }
 
@@ -566,8 +596,8 @@ async function runSandboxSimulation() {
                     <p class="text-[10px] font-bold text-slate-400 uppercase">Decision Core</p>
                     <p class="text-xs text-slate-600">Would you like to implement this strategy?</p>
                     <div class="flex gap-2">
-                        <button onclick="logDecision('Implemented')" class="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-700">Implement</button>
-                        <button onclick="logDecision('Ignored')" class="bg-slate-100 text-slate-500 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200">Ignore</button>
+                        <button onclick="logDecision('implement')" class="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-700">Implement</button>
+                        <button onclick="logDecision('ignored')" class="bg-slate-100 text-slate-500 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200">Ignore</button>
                     </div>
                 </div>
             </div>`);
@@ -607,7 +637,7 @@ async function runSandboxSimulation() {
             const entries = await res.json();
             hideLoading();
             let historyMsg = "### 📜 Decision History Ledger\n\n";
-            const implemented = entries.filter(e => e.chosenPlan === 'Implemented');
+             const implemented = entries.filter(e => e.chosenPlan === 'implement');
             if(implemented.length === 0) {
                 historyMsg += "_No implemented decisions found._";
             } else {
