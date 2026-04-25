@@ -2,8 +2,8 @@ Documentation:
 1. [QUALITY ASSURANCE TESTING DOCUMENTATION (QATD) _168.pdf](https://github.com/user-attachments/files/27089084/QUALITY.ASSURANCE.TESTING.DOCUMENTATION.QATD._168.pdf)
 2. [SYSTEM ANALYSIS DOCUMENTATION (SAD)_168.pdf](https://github.com/user-attachments/files/27089083/SYSTEM.ANALYSIS.DOCUMENTATION.SAD._168.pdf)
 3. [PRODUCT REQUIREMENT DOCUMENT (PRD)_168.pdf](https://github.com/user-attachments/files/27089081/PRODUCT.REQUIREMENT.DOCUMENT.PRD._168.pdf)
-4. Pitch Deck:
-5. Pitch Video:
+4. Pitch Deck: [Pitch Deck_168.pdf](https://github.com/user-attachments/files/27089863/Pitch.Deck_168.pdf)
+5. Pitch Video: 
 
 
 # 🌾 AgriWise - AI-Powered Agricultural Investment Risk Analyst
