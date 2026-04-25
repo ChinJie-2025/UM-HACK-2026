@@ -31,13 +31,13 @@ public class AnalysisController {
             List<CropData> marketData = List.of(); 
             String weatherContext = "Stable conditions reported for current plot.";
 
-            // 1. Execute Gemini Pipeline
+            // 1. Execute Z.AI Pipeline
             AnalysisResult result = decisionService.analyze(profile, marketData, weatherContext);
 
             // 2. Build the Chat Bubble Response
             Map<String, Object> response = new HashMap<>();
             response.put("type", "graph_recommendation");
-            response.put("sender", "Gemini Assistant");
+            response.put("sender", "Z.AI Assistant");
             response.put("message", "Analysis complete for " + result.getRecommendedCrop() + ".");
             response.put("crop", result.getRecommendedCrop());
             response.put("reasoning", result.getReasoning());
