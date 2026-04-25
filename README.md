@@ -218,7 +218,7 @@ UM-HACK-2026/
 
 - **Java 17** or higher
 - **Maven 3.6+**
-- **GLM API Key** (obtain from GLM platform)
+- **Gemini API Key** (obtain from Google AI Studio)
 - **Git** (for version control)
 
 ### Installation
@@ -233,7 +233,8 @@ UM-HACK-2026/
    
    Create a `.env` file in the project root:
    ```env
-   API_KEY=your_glm_api_key_here
+   GEMINI_API_KEY=your_gemini_api_key_here
+# optional aliases supported: GOOGLE_API_KEY / API_KEY
    ```
 
 3. **Install dependencies**
@@ -512,7 +513,8 @@ Runs multiple scenarios in parallel and compares outcomes.
 
 ```env
 # GLM API Configuration
-API_KEY=your_glm_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+# optional aliases supported: GOOGLE_API_KEY / API_KEY
 
 # Future: Market Data API
 # MARKET_DATA_API_KEY=xxx
@@ -527,8 +529,8 @@ Located in `.env` file, managed by `AppConfig.java`:
 ```java
 public class AppConfig {
     public static String getGlmApiKey() {
-        // Loads from .env file
-        return dotenv.get("API_KEY");
+        // Resolves GEMINI_API_KEY first, then GOOGLE_API_KEY/API_KEY fallback
+        return GeminiApiKeyResolver.resolve(dotenv.get("GEMINI_API_KEY"));
     }
 }
 ```
