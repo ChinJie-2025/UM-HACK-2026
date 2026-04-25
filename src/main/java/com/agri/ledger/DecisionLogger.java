@@ -1,10 +1,17 @@
 package com.agri.ledger;
 
+import com.agri.engine.GlmClient;
+import com.agri.engine.MultiStrategyGenerator;
+import com.agri.engine.PromptBuilder;
+import com.agri.engine.ZaiRationaleGenerator;
 import com.agri.model.AnalysisResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -13,30 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Part 6 – Decision Ledger
- *
- * DecisionLogger is the persistence layer for the ledger.
- * Every time DecisionService produces an AnalysisResult, the caller should invoke
- * {@link #log(String, AnalysisResult)} to create a permanent, auditable record.
- *
- * Storage:
- *   Entries are stored as a JSON array in {@code ledger.json} in the working directory
- *   (the same directory as {@code .env} and {@code pom.xml}).
- *   Jackson handles all serialization / deserialization.
- *
- * Thread safety:
- *   This class is NOT thread-safe. For a hackathon single-user context this is fine.
- *   For production, wrap the file I/O in a ReentrantLock.
- *
- * Usage (from a controller):
- * <pre>
- *   DecisionLogger logger   = new DecisionLogger();
- *   AnalysisResult result   = decisionService.analyze(profile, market, weather);
- *   String recommendationId = logger.log(profile.getFarmerName(), result);
- *   // Pass recommendationId to UserActionTracker and OutcomeInput later.
- * </pre>
- */
+@Component // Enable Spring to find this bean
 public class DecisionLogger {
 
     private static final String LEDGER_FILE = "ledger.json";
@@ -45,15 +29,11 @@ public class DecisionLogger {
     private final ObjectMapper mapper;
     private final File         ledgerFile;
 
+
+    // FIX: Removed the incorrect DecisionService constructor and recursive field
     public DecisionLogger() {
         this.mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
         this.ledgerFile = new File(LEDGER_FILE);
-    }
-
-    /** Constructor for tests or custom file locations. */
-    public DecisionLogger(String filePath) {
-        this.mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-        this.ledgerFile = new File(filePath);
     }
 
     // ── Public API ────────────────────────────────────────────────────────────────

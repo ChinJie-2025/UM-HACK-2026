@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agri-Investment Risk Analyst | Command Center</title>
     
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -119,35 +120,103 @@
         </div>
     </div>
 
-    <div id="chat-view" class="hidden flex-1 h-full flex-col chat-bg relative">
-        <div class="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between shadow-sm shrink-0 z-10">
-            <div class="flex items-center gap-4">
-                <button onclick="showDashboard()" class="text-slate-400 hover:text-slate-700 transition-colors">
-                    <i data-lucide="arrow-left" class="w-6 h-6"></i>
-                </button>
-                <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-emerald-400 shadow-sm border border-slate-700">
-                    <i data-lucide="bot" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h2 class="font-bold text-slate-900 leading-tight">Z.AI Agronomist</h2>
-                    <p class="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Online
-                    </p>
-                </div>
-            </div>
+    <div id="chat-view" class="hidden flex-1 min-h-0 flex bg-[#e6ecea]">
+    <div class="w-80 bg-white border-r border-slate-200 flex flex-col hidden md:flex">
+        <div class="p-4 bg-slate-900 text-white font-bold flex items-center gap-2">
+            <i data-lucide="message-square"></i> Z.AI Channels
         </div>
-        <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
-        <div class="bg-slate-100 p-4 shrink-0 border-t border-slate-200">
-            <div class="max-w-5xl mx-auto flex items-center gap-3">
-                <div class="flex-1 bg-white border border-slate-300 rounded-2xl px-4 py-2.5 flex items-center shadow-sm">
-                    <input type="text" id="chatInput" placeholder="Ask Z.AI for a strategy..." class="w-full bg-transparent border-none outline-none text-slate-700 text-sm" onkeypress="handleKeyPress(event)">
+        <div class="flex-1 overflow-y-auto p-2 space-y-2">
+            <p class="text-[10px] uppercase font-bold text-slate-400 px-3 mt-4">Suggested FAQs</p>
+            <button onclick="quickFaq('What is the weather risk?')" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 transition-all flex items-center gap-3 group">
+                <div class="bg-amber-100 p-2 rounded-lg text-amber-600"><i data-lucide="cloud-rain" class="w-4 h-4"></i></div>
+                <div><p class="text-sm font-bold">Weather Risk</p><p class="text-xs text-slate-400">Latest forecast</p></div>
+            </button>
+            <button onclick="quickFaq('Check my yield estimation')" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 transition-all flex items-center gap-3">
+                <div class="bg-emerald-100 p-2 rounded-lg text-emerald-600"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></div>
+                <div><p class="text-sm font-bold">Yield Analysis</p><p class="text-xs text-slate-400">Refers to CSV</p></div>
+            </button>
+            <button onclick="toggleSandbox()" class="w-full text-left p-3 rounded-xl hover:bg-amber-50 transition-all flex items-center gap-3 group border border-transparent hover:border-amber-200">
+    <div class="bg-amber-100 p-2 rounded-lg text-amber-600">
+        <i data-lucide="layout-template" class="w-4 h-4"></i>
+    </div>
+    <div>
+        <p class="text-sm font-bold text-slate-800">Decision Sandbox</p>
+        <p class="text-[10px] text-amber-600 font-bold uppercase tracking-tight">What-If Mode</p>
+    </div>
+</button>
+            <button onclick="openLedgerHistory()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 transition-all flex items-center gap-3">
+                <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i data-lucide="book-open" class="w-4 h-4"></i></div>
+                <div><p class="text-sm font-bold">Decision Ledger</p><p class="text-xs text-slate-400">Action history</p></div>
+            </button>
+            <div id="ledger-modal" class="fixed inset-0 bg-slate-900/60 hidden z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i> Decision Ledger History</h3>
+                <button onclick="closeLedgerModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="overflow-y-auto p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                <th class="p-3 font-bold">Date</th>
+                                <th class="p-3 font-bold">Crop</th>
+                                <th class="p-3 font-bold">AI Strategy</th>
+                                <th class="p-3 font-bold">Your Action</th>
+                                <th class="p-3 font-bold">Projected (RM)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledger-table-body" class="text-sm divide-y divide-slate-100">
+                            </tbody>
+                    </table>
                 </div>
-                <button onclick="sendMessage()" class="w-12 h-12 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center text-white shadow-md">
-                    <i data-lucide="send-horizonal" class="w-5 h-5 ml-1"></i>
-                </button>
             </div>
         </div>
     </div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col relative min-h-0">
+        <div class="bg-white/80 backdrop-blur p-4 border-b flex justify-between items-center shadow-sm">
+            <div class="flex items-center gap-3">
+                <button onclick="showDashboard()" class="md:hidden"><i data-lucide="menu"></i></button>
+                <div class="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-emerald-400"><i data-lucide="bot"></i></div>
+                <div><h3 class="font-bold text-sm">Z.AI Assistant</h3><p class="text-[10px] text-emerald-500 font-bold tracking-widest">● ONLINE</p></div>
+            </div>
+            <button onclick="showDashboard()" class="text-xs font-bold text-slate-400 hover:text-slate-900">EXIT CHAT</button>
+        </div>
+<div id="sandbox-panel" class="hidden mx-6 mb-4 p-6 bg-white border-2 border-amber-200 rounded-2xl shadow-xl animate-fade-in relative z-30">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-amber-800 flex items-center gap-2">
+            <i data-lucide="flask-conical" class="w-4 h-4"></i> Simulation Controls
+        </h3>
+        <button onclick="toggleSandbox()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Cost Modifier</p>
+            <p class="text-sm font-bold text-slate-700">+20% Fertilizer</p>
+        </div>
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Environment</p>
+            <p class="text-sm font-bold text-slate-700">Severe Drought</p>
+        </div>
+    </div>
+    <button onclick="runSandboxSimulation()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
+        <i data-lucide="play" class="w-4 h-4"></i> Run Analysis
+    </button>
+</div>
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 chat-bg">
+            </div>
+
+        <div class="p-4 bg-white/50 backdrop-blur border-t shrink-0">
+            <div class="max-w-4xl mx-auto flex gap-3">
+                <input type="text" id="chatInput" placeholder="Message Z.AI..." class="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm" onkeypress="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()" class="bg-slate-900 text-white p-3 rounded-2xl hover:bg-emerald-600 transition-all shadow-lg"><i data-lucide="send"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <div id="plot-modal" class="fixed inset-0 bg-slate-900/60 hidden z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -199,160 +268,356 @@
         <span id="toast-msg">Success!</span>
     </div>
 
-    <script>
-        lucide.createIcons();
+    
+<script>
+    lucide.createIcons();
 
-        // 1. MASTER RENDERER (Includes Click-to-Chat)
-        function displayPlotCard(plotId, cropName, landSize, yieldVal, waterVal) {
-            const grid = document.getElementById('plot-grid');
-            const colors = ['emerald-500', 'blue-500', 'indigo-500', 'cyan-500'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            
-            const cardHTML = `
-                <div onclick="showChat('${cropName}')" class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden animate-fade-in cursor-pointer group">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-${randomColor} group-hover:h-2 transition-all"></div>
-                    <div class="p-6">
-                        <div class="flex justify-between items-start mb-6">
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">${plotId}</h3>
-                                <p class="text-sm text-slate-500">${cropName} • ${landSize} Acres</p>
-                            </div>
-                            <div class="bg-slate-50 text-slate-400 px-3 py-1 rounded-full text-xs font-bold border border-slate-100 flex items-center gap-1">
-                                <i data-lucide="database" class="w-3 h-3"></i> Synced
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Est. Yield</p>
-                                <p class="text-sm font-bold text-slate-700">${yieldVal || '---'}</p>
-                            </div>
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Water Need</p>
-                                <p class="text-sm font-bold text-slate-700 truncate">${waterVal || '---'}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            grid.insertAdjacentHTML('beforeend', cardHTML);
-            lucide.createIcons();
-        }
+    // --- ADD THIS VARIABLE AT THE TOP ---
+    let lastAiRecommendation = ""; // This catches the text from Step 1
 
-        // 2. LOAD SAMPLES & BACKEND DATA ON STARTUP
-       // 2. THE PERSISTENCE LOGIC (This runs on every refresh)
-        window.onload = async function() {
-            // A. Keep your hardcoded samples for the demo
-            displayPlotCard("PLT-001", "Paddy (MR297)", 2.5, "4.2 MT", "Moderate");
-            displayPlotCard("PLT-002", "Musang King", 5.0, "8.5 MT", "High");
-            
-            // B. Fetch the real data from your Java CSV backend
-            try {
-                const response = await fetch('/api/crops/all');
-                if (response.ok) {
-                    const plots = await response.json();
-                    // This loops through your CSV data and draws a card for each row
-                    plots.forEach(p => {
-                        displayPlotCard(p.plotId, p.cropName, p.landSize, p.expectedYield, p.waterReq);
-                    });
-                }
-            } catch (err) { 
-                console.warn("Could not sync with CSV database. Is the server running?"); 
-            }
+    // ==========================================
+    // 1. MODAL & PLOT REGISTRATION
+    // ==========================================
+    function openModal() { document.getElementById('plot-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('plot-modal').classList.add('hidden'); }
+
+    async function submitPlot(event) {
+        event.preventDefault();
+        const payload = {
+            plotId: document.getElementById('plotId').value,
+            cropName: document.getElementById('cropName').value,
+            landSize: parseFloat(document.getElementById('landSize').value),
+            plantingDate: document.getElementById('plantingDate').value,
+            gpsLocation: document.getElementById('gpsAddress').value
         };
 
-        // 3. SUBMISSION LOGIC
-        async function submitPlot(event) {
-            event.preventDefault();
-            const plotId = document.getElementById('plotId').value;
-            const cropName = document.getElementById('cropName').value;
-            const landSize = document.getElementById('landSize').value;
-            
-            const payload = {
-                plotId, 
-                cropName, 
-                landSize: parseFloat(landSize),
-                plantingDate: document.getElementById('plantingDate').value,
-                gpsLocation: document.getElementById('gpsAddress').value
-            };
-
-            try {
-                const res = await fetch('/api/crops/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const aiResult = await res.json();
-                closeModal();
-                displayPlotCard(plotId, cropName, landSize, aiResult.expectedYield, aiResult.waterReq);
-                showToast("Registered to Ledger!");
-                setTimeout(() => showChat(cropName), 1500);
-            } catch (err) { alert("Backend offline."); }
+        try {
+            const res = await fetch('/api/crops/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const aiResult = await res.json();
+            closeModal();
+            document.getElementById('plot-form').reset();
+            document.getElementById('gpsAddress').value = "";
+            document.getElementById('map-container').classList.add('hidden');
+            displayPlotCard(payload.plotId, payload.cropName, payload.landSize, aiResult.expectedYield, aiResult.waterReq);
+            const toast = document.getElementById('toast');
+            toast.classList.remove('opacity-0', '-translate-y-10');
+            setTimeout(() => toast.classList.add('opacity-0', '-translate-y-10'), 3000);
+        } catch (err) { 
+            alert("⚠️ Cannot save plot. Ensure your Java backend is running."); 
         }
+    }
 
-        // 4. GPS LOGIC (Original Version Kept)
-        async function getLocationWithMap() {
-            const addr = document.getElementById('gpsAddress');
-            const mapC = document.getElementById('map-container');
-            const mapF = document.getElementById('map-frame');
-            addr.value = "Locating satellite...";
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    document.getElementById('rawLat').value = lat;
-                    document.getElementById('rawLon').value = lon;
+    async function getLocationWithMap() {
+        const addr = document.getElementById('gpsAddress');
+        const mapC = document.getElementById('map-container');
+        const mapF = document.getElementById('map-frame');
+        addr.value = "Locating satellite...";
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+                document.getElementById('rawLat').value = lat;
+                document.getElementById('rawLon').value = lon;
+                try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
                     const data = await res.json();
                     addr.value = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
                     mapC.classList.remove('hidden');
                     mapF.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}&layer=mapnik&marker=${lat},${lon}`;
-                });
-            }
+                } catch (e) {
+                    addr.value = `Lat: ${lat}, Lon: ${lon} (Map unavailable)`;
+                }
+            }, () => {
+                addr.value = "GPS Permission Denied.";
+            });
+        } else {
+            addr.value = "Geolocation not supported by this browser.";
         }
+    }
 
-        // 5. VIEW TOGGLING & CHAT LOGIC
-        function openModal() { document.getElementById('plot-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('plot-modal').classList.add('hidden'); }
-        function showDashboard() {
-            document.getElementById('chat-view').classList.add('hidden');
-            document.getElementById('dashboard-view').classList.remove('hidden');
-        }
-
-        function showChat(cropName) {
-            document.getElementById('dashboard-view').classList.add('hidden');
-            document.getElementById('chat-view').classList.remove('hidden');
-            document.getElementById('chat-view').classList.add('flex');
-            const chatMessages = document.getElementById('chat-messages');
-            chatMessages.innerHTML = `<div class="flex items-end gap-3 mb-4">
-                <div class="bg-white p-4 rounded-2xl shadow-sm border text-sm">
-                    Uplink verified for <b>${cropName}</b>. How should we proceed with the risk analysis?
+    // ==========================================
+    // 2. DASHBOARD CARDS & VIEW SWITCHING
+    // ==========================================
+    function displayPlotCard(plotId, cropName, landSize, yieldVal, waterVal) {
+        const grid = document.getElementById('plot-grid');
+        const colors = ['emerald-500', 'blue-500', 'indigo-500', 'cyan-500'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        const cardHTML = `
+            <div onclick="showChat('${cropName}', ${landSize})" class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden animate-fade-in cursor-pointer group">
+                <div class="absolute top-0 left-0 w-full h-1 bg-${randomColor} group-hover:h-2"></div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-slate-900 group-hover:text-emerald-600">${plotId}</h3>
+                    <p class="text-sm text-slate-500 mb-6">${cropName} • ${landSize} Acres</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-3 rounded-xl border"><p class="text-[10px] font-bold text-slate-400">Yield</p><p class="text-sm font-bold text-slate-700">${yieldVal}</p></div>
+                        <div class="bg-slate-50 p-3 rounded-xl border"><p class="text-[10px] font-bold text-slate-400">Water</p><p class="text-sm font-bold text-slate-700">${waterVal}</p></div>
+                    </div>
                 </div>
             </div>`;
-        }
+        grid.insertAdjacentHTML('beforeend', cardHTML);
+        lucide.createIcons();
+    }
 
-        async function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const msg = input.value.trim();
-            if (!msg) return;
-            document.getElementById('chat-messages').innerHTML += `<div class="flex justify-end mb-4"><div class="bg-emerald-600 text-white p-3 rounded-2xl text-sm">${msg}</div></div>`;
-            input.value = '';
-            try {
-                const res = await fetch('/api/crops/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg})});
-                const data = await res.json();
-                setTimeout(() => appendAIResponse(data.reply), 500);
-            } catch(e) { appendAIResponse("Uplink error."); }
-        }
+    function showChat(cropName, landSize) {
+        window.currentCrop = cropName;
+        window.currentSize = landSize;
+        document.getElementById('dashboard-view').classList.add('hidden');
+        document.getElementById('chat-view').classList.remove('hidden');
+        document.getElementById('chat-view').classList.add('flex');
+        appendAIResponse(`Hello! I'm ready to analyze your <b>${cropName}</b> plot (${landSize} acres). What would you like to know?`);
+    }
 
-        function appendAIResponse(html) {
-            document.getElementById('chat-messages').innerHTML += `<div class="flex items-end gap-3 mb-4"><div class="bg-white p-4 rounded-2xl shadow-sm border text-sm">${html}</div></div>`;
-        }
+    function showDashboard() { 
+        document.getElementById('chat-view').classList.add('hidden'); 
+        document.getElementById('dashboard-view').classList.remove('hidden'); 
+    }
 
-        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
-            t.classList.remove('opacity-0', '-translate-y-10');
-            setTimeout(() => t.classList.add('opacity-0', '-translate-y-10'), 3000);
+    // ==========================================
+    // 3. CHAT LOGIC & LOADING INDICATORS
+    // ==========================================
+    function showLoading() {
+        const chat = document.getElementById('chat-messages');
+        chat.insertAdjacentHTML('beforeend', `
+            <div id="ai-loading" class="flex justify-start animate-fade-in mb-4">
+                <div class="bg-white px-4 py-3 rounded-2xl shadow border text-slate-500 italic flex items-center gap-2">
+                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                    Z.AI is thinking...
+                </div>
+            </div>
+        `);
+        lucide.createIcons(); 
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function hideLoading() {
+        const el = document.getElementById('ai-loading');
+        if (el) el.remove();
+    }
+
+    let currentRecommendationId = null;
+    async function sendMessage(presetMsg = null) {
+        const input = document.getElementById('chatInput');
+        const msg = presetMsg || input.value.trim();
+        if (!msg) return;
+        appendUserMessage(msg);
+        input.value = "";
+        showLoading();
+        const payload = {
+            message: msg,
+            cropName: window.currentCrop || "General",
+            landSize: window.currentSize ? window.currentSize.toString() : "0"
+        };
+        try {
+            const res = await fetch('/api/crops/chat', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            hideLoading();
+            appendAIResponse(data.reply);
+            if (data.reply.toLowerCase().includes("plan") || 
+                data.reply.toLowerCase().includes("strategy") || 
+                data.reply.toLowerCase().includes("recommend")) {
+                appendDecisionButtons();
+            }
+        } catch (err) {
+            hideLoading();
+            appendAIResponse("⚠️ Error connecting to Z.AI Engine. Please ensure your backend is running.");
         }
-    </script>
+        const data = await res.json();
+    currentRecommendationId = data.recommendationId; // Capture the UUID from the backend
+    appendAIResponse(data.reply);
+    }
+
+    function appendUserMessage(msg) {
+        const chat = document.getElementById('chat-messages');
+        chat.insertAdjacentHTML('beforeend', `
+            <div class="flex justify-end animate-fade-in mb-4">
+                <div class="bg-emerald-500 text-white px-4 py-2 rounded-2xl max-w-xs shadow-md">
+                    ${msg}
+                </div>
+            </div>`);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    // --- UPDATED: THIS NOW SAVES THE TEXT FROM STEP 1 ---
+    function appendAIResponse(msg) {
+        lastAiRecommendation = msg; // Store the Step 1 text globally
+        const chat = document.getElementById('chat-messages');
+        const formattedHTML = marked.parse(msg).trim(); 
+        chat.insertAdjacentHTML('beforeend', `
+            <div class="flex justify-start animate-fade-in mb-4">
+                <div class="bg-white px-5 py-4 rounded-2xl max-w-2xl shadow border text-slate-700 prose prose-emerald prose-sm sm:prose-base">
+                    ${formattedHTML}
+                </div>
+            </div>`);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function quickFaq(question) {
+        document.getElementById('chatInput').value = question;
+        sendMessage();
+    }
+
+    // ==========================================
+    // 4. INITIALIZATION
+    // ==========================================
+    window.onload = async function() {
+        displayPlotCard("PLT-001", "Paddy (MR297)", 2.5, "4.2 MT", "Moderate");
+        displayPlotCard("PLT-002", "Musang King", 5.0, "8.5 MT", "High");
+    };
+    // ==========================================
+// 5. DECISION SANDBOX LOGIC
+// ==========================================
+function toggleSandbox() {
+    const panel = document.getElementById('sandbox-panel');
+    panel.classList.toggle('hidden');
+}
+
+async function runSandboxSimulation() {
+    showLoading(); // Reuse your existing loading indicator
+    
+    const payload = {
+        modifiers: { "fertilizerCost": 1.20, "laborAvailability": 0.80 },
+        environmentalContext: "Severe Drought Overlay"
+    };
+
+    async function runSandboxSimulation() {
+    showLoading(); // Triggers the "Z.AI is thinking..." indicator
+    
+    // These modifiers map to your Java SimulationRequest.java
+    const payload = {
+        modifiers: { "budget_multiplier": 1.20 }, // Example: +20% budget
+        environmentalContext: "Severe Drought Overlay" //
+    };
+
+    try {
+        const res = await fetch('/api/crops/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("Backend Simulation Failed");
+
+        const data = await res.json();
+        
+        hideLoading(); // Stops the spinner so the UI becomes interactive again
+        toggleSandbox(); // Closes the "Simulation Controls" panel
+
+        // Displays the hypothetical AI Rationale in the chat
+        appendAIResponse(`### 🧪 Sandbox Result\n**Scenario:** +20% Budget & Drought\n\n${data.reasoning}`);
+        
+    } catch (err) {
+        hideLoading(); // Critical: prevent permanent "Thinking" state on error
+        appendAIResponse("⚠️ **Sandbox Error:** The simulation engine is currently unresponsive.");
+        console.error(err);
+    }
+    }}
+
+    // ==========================================
+    // 5. DECISION LEDGER LOGIC
+    // ==========================================
+    function closeLedgerModal() {
+        document.getElementById('ledger-modal').classList.add('hidden');
+    }
+
+    async function openLedgerHistory() {
+        document.getElementById('ledger-modal').classList.remove('hidden');
+        const tbody = document.getElementById('ledger-table-body');
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i> Loading...</td></tr>`;
+        lucide.createIcons();
+        try {
+            const res = await fetch('/api/ledger/all');
+            const entries = await res.json();
+            if (entries.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No decisions logged yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = entries.map(entry => {
+                const date = new Date(entry.timestamp).toLocaleDateString();
+                const chosen = entry.chosenPlan ? 
+                    `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-xs font-bold">${entry.chosenPlan}</span>` : 
+                    `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-xs font-bold">Ignored</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-3 text-slate-500">${date}</td>
+                        <td class="p-3 font-bold text-slate-700">${entry.recommendedCrop}</td>
+                        <td class="p-3 text-xs italic text-slate-600">${(entry.reasoning || entry.recommendedStrategy || '—').substring(0, 60)}...</td>
+                        <td class="p-3">${chosen}</td>
+                        <td class="p-3 font-mono text-emerald-600 font-bold">${entry.projectedEconomicImpact || '0.00'}</td>
+                    </tr>`;
+            }).join('');
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-500 font-bold">Error loading ledger data. Is the backend running?</td></tr>`;
+        }
+    }
+
+    function appendDecisionButtons() {
+        const chat = document.getElementById('chat-messages');
+        chat.insertAdjacentHTML('beforeend', `
+            <div id="decision-actions" class="flex justify-start animate-fade-in mb-4">
+                <div class="bg-white p-4 rounded-2xl shadow border border-indigo-100 flex flex-col gap-2 max-w-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Decision Core</p>
+                    <p class="text-xs text-slate-600">Would you like to implement this strategy?</p>
+                    <div class="flex gap-2">
+                        <button onclick="logDecision('Implemented')" class="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-700">Implement</button>
+                        <button onclick="logDecision('Ignored')" class="bg-slate-100 text-slate-500 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200">Ignore</button>
+                    </div>
+                </div>
+            </div>`);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    // --- UPDATED: THIS NOW SENDS THE SAVED STEP 1 TEXT TO STEP 3 ---
+    async function logDecision(planType) {
+    if (!currentRecommendationId) return;
+
+    const payload = {
+        recommendationId: currentRecommendationId,
+        chosenStrategy: planType // "Conservative", "Balanced", or "Aggressive"
+    };
+
+    try {
+        const res = await fetch('/api/ledger/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+            document.getElementById('decision-actions').remove();
+            appendAIResponse(`✅ Decision **${planType}** has been permanently logged to your ledger.`);
+        }
+    } catch (err) {
+        console.error("Ledger Sync Failed");
+    }
+}
+
+    async function showDecisionHistory() {
+        appendUserMessage("Show my Decision History");
+        showLoading();
+        try {
+            const res = await fetch('/api/ledger/all');
+            const entries = await res.json();
+            hideLoading();
+            let historyMsg = "### 📜 Decision History Ledger\n\n";
+            const implemented = entries.filter(e => e.chosenPlan === 'Implemented');
+            if(implemented.length === 0) {
+                historyMsg += "_No implemented decisions found._";
+            } else {
+                implemented.forEach(e => {
+                    historyMsg += `- **${e.recommendedCrop}**: Plan implemented on ${e.timestamp.split('T')[0]}\n`;
+                });
+            }
+            appendAIResponse(historyMsg);
+        } catch (e) { hideLoading(); appendAIResponse("⚠️ Could not retrieve history."); }
+    }
+</script>
 </body>
 </html>

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
+import org.springframework.stereotype.Component;
+
 /**
  * Part 6 – Decision Ledger
  *
@@ -25,6 +27,7 @@ import java.util.Set;
  *   Store it in session state (or pass it back to the UI) immediately after
  *   DecisionService.analyze() returns so it's available when the farmer chooses a plan.
  */
+@Component
 public class UserActionTracker {
 
     private static final Set<String> VALID_PLANS = Set.of("Conservative", "Balanced", "Aggressive");

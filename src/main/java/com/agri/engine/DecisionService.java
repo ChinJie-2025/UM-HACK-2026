@@ -6,83 +6,29 @@ import com.agri.model.FarmerProfile;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-
+import com.agri.ledger.*;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-/**
- * Part 4 - Decision Core
- *
- * DecisionService is the single public entry point for the entire engine package.
- * It owns and wires together all four engine components and exposes one method:
- *
- *   {@link #analyze(FarmerProfile, List, String)}
- *
- * Pipeline (as specified in UM_HACK.md Part 4):
- *   Step 1 – PromptBuilder       : profile + market + weather → prompt string
- *   Step 2 – GlmClient           : prompt → raw AI content string (JSON)
- *   Step 3 – ZaiRationaleGenerator : raw content → AnalysisResult (4 core fields)
- *   Step 4 – MultiStrategyGenerator : AnalysisResult → strategyBreakdown map
- *   Step 5 – Assemble final AnalysisResult with strategies and return.
- *
- * ── IMPORTANT: Required patch to AnalysisResult (zip1) before this compiles ──────────
- *
- *   The AnalysisResult model (zip1) declares:
- *       private Map<String, String> strategyBreakdown;
- *   but does NOT expose a setter or getter for it.
- *
- *   Add these two methods to AnalysisResult.java before integrating Part 4:
- *
- *       public void setStrategyBreakdown(Map<String, String> strategyBreakdown) {
- *           this.strategyBreakdown = strategyBreakdown;
- *       }
- *
- *       public Map<String, String> getStrategyBreakdown() {
- *           return strategyBreakdown;
- *       }
- *
- * ── IMPORTANT: Required patch to CropData (zip1) before MarketDataClient compiles ────
- *
- *   MarketDataClient (zip2) calls: new CropData(name, price, yield, water)
- *   But CropData only has a no-arg constructor. Add:
- *
- *       public CropData(String name, double marketPrice, double expectedYield, double waterReq) {
- *           this.name          = name;
- *           this.marketPrice   = marketPrice;
- *           this.expectedYield = expectedYield;
- *           this.waterReq      = waterReq;
- *       }
- *
- * ──────────────────────────────────────────────────────────Adjusted Risk Score──────────────────────────
- *
- * Usage example (from a controller or test):
- *
- *   String apiKey = AppConfig.getGlmApiKey();      // Part 8
- *   DecisionService service = new DecisionService(apiKey);
- *
- *   List<CropData>  market  = new MarketDataClient().fetchCurrentMarketPrices();
- *   String          weather = new WeatherNewsClient().fetchUnstructuredContext(profile.getLocation());
- *
- *   AnalysisResult result = service.analyze(profile, market, weather);
- */
+
 @Service
 public class DecisionService {
 
-    private final PromptBuilder          promptBuilder;
-    private final GlmClient              glmClient;
-    private final ZaiRationaleGenerator  rationaleGenerator;
+    private final PromptBuilder promptBuilder;
+    private final GlmClient glmClient;
+    private final ZaiRationaleGenerator rationaleGenerator;
     private final MultiStrategyGenerator strategyGenerator;
+    private final DecisionLogger decisionLogger; 
 
-    /**
-     * Constructs a DecisionService wired with all engine components.
-     *
-     * @param glmApiKey Your Z.AI API key. Retrieve from AppConfig – never hardcode.
-     */
-    public DecisionService(@Value("${zai.api.key:mock_key_for_hackathon}")String glmApiKey) {
-        this.promptBuilder      = new PromptBuilder();
-        this.glmClient          = new GlmClient(glmApiKey);
+    @Autowired
+    public DecisionService(@Value("${ZAI_API_KEY}") String glmApiKey, 
+                           DecisionLogger decisionLogger) { 
+        this.promptBuilder = new PromptBuilder();
+        this.glmClient = new GlmClient(glmApiKey);
         this.rationaleGenerator = new ZaiRationaleGenerator();
-        this.strategyGenerator  = new MultiStrategyGenerator();
+        this.strategyGenerator = new MultiStrategyGenerator();
+        this.decisionLogger = decisionLogger; // Correctly initialize the injected logger
     }
     
 
@@ -95,47 +41,54 @@ public class DecisionService {
      * @return               A complete AnalysisResult with rationale + 3 strategies.
      * @throws IOException   If the GLM API call fails (network error or non-2xx response).
      */
-    public AnalysisResult analyze(FarmerProfile profile,
-                                   List<CropData> marketData,
-                                   String weatherContext) throws IOException {
-
-        log("INFO", "=== Decision pipeline started for: " + profile.getLocation() + " ===");
-
-        // ── Step 1: Build the context-aware prompt ────────────────────────────────
-        log("INFO", "Step 1/4 – Building prompt...");
-        String prompt = promptBuilder.build(profile, marketData, weatherContext);
-
-        // ── Step 2: Call the GLM API ──────────────────────────────────────────────
-        log("INFO", "Step 2/4 – Calling GLM API...");
-        String rawAiResponse = glmClient.call(prompt);
-
-        // ── Step 3: Parse rationale into AnalysisResult ───────────────────────────
-        log("INFO", "Step 3/4 – Parsing AI rationale...");
-        AnalysisResult result = rationaleGenerator.parse(rawAiResponse);
-        log("INFO", "Recommended crop: " + result.getRecommendedCrop()
-                + " | Risk: " + result.getRiskScore()
-                + "/10 | Impact: RM" + String.format("%.2f", result.getEconomicImpact()));
-
-        // ── Step 4: Generate the three strategies ─────────────────────────────────
-        log("INFO", "Step 4/4 – Generating Conservative / Balanced / Aggressive strategies...");
-        Map<String, String> strategies = strategyGenerator.generate(result, profile, marketData);
-
-        // Attach the strategy map to the result.
-        // REQUIRES setStrategyBreakdown() to be added to AnalysisResult – see class Javadoc above.
-        result.setStrategyBreakdown(strategies);
-
-        log("INFO", "=== Decision pipeline complete ===");
-        return result;
-    }
+    // Inside DecisionService.java
+public AnalysisResult analyze(FarmerProfile profile, List<CropData> marketData, String weatherContext) throws IOException {
+    System.out.println("[DecisionService] Step 1: Building Prompt...");
+    String prompt = promptBuilder.build(profile, marketData, weatherContext);
+    
+    System.out.println("[DecisionService] Step 2: Calling GLM API (This might take a while)...");
+    String rawResponse = glmClient.call(prompt); // <--- IF STUCK, IT STOPS HERE
+    
+    System.out.println("[DecisionService] Step 3: Parsing Response...");
+    AnalysisResult result = rationaleGenerator.parse(rawResponse);
+    
+    System.out.println("[DecisionService] Step 4: Generating Strategies...");
+    Map<String, String> strategies = strategyGenerator.generate(result, profile, marketData);
+    
+    result.setStrategyBreakdown(strategies);
+    // NEW: Auto-log every recommendation to the JSON ledger
+    String recId = decisionLogger.log(profile.getFarmerName(), result);
+    result.setRecommendationId(recId);
+    return result;
+}
 
     private void log(String level, String msg) {
         System.out.println("[" + level + "][DecisionService] " + msg);
     }
-    
+    public Map<String, Object> getAnalysisWithGraph(FarmerProfile profile, List<CropData> market, String weather) throws IOException {
+    // 1. Run the existing Z.AI pipeline
+    AnalysisResult result = analyze(profile, market, weather);
+
+    // 2. Prepare the response packet
+    Map<String, Object> response = new HashMap<>();
+    response.put("textReasoning", result.getReasoning());
+    response.put("recommendedCrop", result.getRecommendedCrop());
+    response.put("graphData", result.getPlotData()); // The numeric values for the Y-axis
+    response.put("labels", result.getPlotData().keySet()); // The strategy names for the X-axis
+
+    return response;
+}
     public String processNaturalLanguage(String userMessage) {
-        // 1. You might call PromptBuilder here
-        // 2. Call GlmClient to get AI response
-        // For now, let's return a test string to stop the error:
-        return "AI is processing your message: " + userMessage;
+    try {
+        // Create a simple chat-focused prompt
+        String chatPrompt = "You are a helpful Malaysian agricultural assistant. " +
+                            "Answer the following farmer's question concisely: " + userMessage;
+        
+        // Reuse the GlmClient logic
+        return glmClient.call(chatPrompt);
+    } catch (IOException e) {
+        log("ERROR", "Chat processing failed: " + e.getMessage());
+        return "I'm sorry, I'm having trouble connecting to my brain right now. Please try again.";
     }
+}
 }
