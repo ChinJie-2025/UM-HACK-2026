@@ -1,5 +1,7 @@
 package com.agri.config;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 import java.util.List;
 
 /**
@@ -30,6 +32,31 @@ public final class GeminiApiKeyResolver {
             if (isUsable(resolved)) {
                 return resolved;
             }
+        }
+
+        resolved = resolveFromDotenv();
+        if (isUsable(resolved)) {
+            return resolved;
+        }
+
+        return "";
+    }
+
+    private static String resolveFromDotenv() {
+        try {
+            Dotenv dotenv = Dotenv.configure()
+                    .directory(System.getProperty("user.dir"))
+                    .ignoreIfMissing()
+                    .load();
+
+            for (String keyName : KEY_NAMES) {
+                String value = sanitize(dotenv.get(keyName));
+                if (isUsable(value)) {
+                    return value;
+                }
+            }
+        } catch (Exception ignored) {
+            // Ignore errors here; callers handle missing key via fallback message.
         }
 
         return "";

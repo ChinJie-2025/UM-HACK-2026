@@ -70,7 +70,8 @@ public class ZAIService {
             generationConfig.put("maxOutputTokens", 1024);
             requestBody.set("generationConfig", generationConfig);
 
-            // Build URL with API key
+            // Build URL with API key (re-resolve each request so .env/env updates are picked up)
+            API_KEY = GeminiApiKeyResolver.resolve(API_KEY);
             if (!GeminiApiKeyResolver.isUsable(API_KEY)) {
                 return "Configuration Error: Gemini API key is missing or invalid. Set GEMINI_API_KEY (or GOOGLE_API_KEY/API_KEY).";
             }
