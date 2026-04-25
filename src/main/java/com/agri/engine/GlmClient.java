@@ -28,14 +28,19 @@ import java.nio.charset.StandardCharsets;
  */
 public class GlmClient {
 
+    // Low temperature → more deterministic JSON output from the GLM
+    
+    
+
     // ── Z.AI GLM endpoint & model ────────────────────────────────────────────────
-    private static final String API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
-    private static final String MODEL   = "glm-4";
+    private static final String API_URL = "ANTHROPIC_BASE_URL=https://api.ilmu.ai/anthropic";
+    private static final String MODEL   = "ilmu-glm-5.1";
 
     // Low temperature → more deterministic JSON output from the GLM
     private static final double TEMPERATURE     = 0.3;
     private static final int    CONNECT_TIMEOUT = 15_000; // ms
     private static final int    READ_TIMEOUT    = 60_000; // ms
+    private static final int    MAX_TOKENS      = 1024; // <-- Add this constant
 
     private final String       apiKey;
     private final ObjectMapper mapper;
@@ -62,6 +67,7 @@ public class GlmClient {
         ObjectNode requestBody = mapper.createObjectNode();
         requestBody.put("model", MODEL);
         requestBody.put("temperature", TEMPERATURE);
+        requestBody.put("max_tokens", MAX_TOKENS);
 
         ArrayNode messages   = mapper.createArrayNode();
         ObjectNode userMsg   = mapper.createObjectNode();
