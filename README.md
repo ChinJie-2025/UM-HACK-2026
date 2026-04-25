@@ -1,3 +1,12 @@
+Documentation: 
+[QUALITY ASSURANCE TESTING DOCUMENTATION (QATD) _168.pdf](https://github.com/user-attachments/files/27085029/QUALITY.ASSURANCE.TESTING.DOCUMENTATION.QATD._168.pdf)
+[SYSTEM ANALYSIS DOCUMENTATION (SAD)_168.pdf](https://github.com/user-attachments/files/27085028/SYSTEM.ANALYSIS.DOCUMENTATION.SAD._168.pdf)
+[PRODUCT REQUIREMENT DOCUMENT (PRD)_168.pdf](https://github.com/user-attachments/files/27085026/PRODUCT.REQUIREMENT.DOCUMENT.PRD._168.pdf)
+
+Pitch Deck:
+Pitch Video:
+
+
 # 🌾 AgriWise - AI-Powered Agricultural Investment Risk Analyst
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
