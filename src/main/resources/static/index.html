@@ -135,6 +135,35 @@
                 <div class="bg-emerald-100 p-2 rounded-lg text-emerald-600"><i data-lucide="bar-chart-3" class="w-4 h-4"></i></div>
                 <div><p class="text-sm font-bold">Yield Analysis</p><p class="text-xs text-slate-400">Refers to CSV</p></div>
             </button>
+            <button onclick="openLedgerHistory()" class="w-full text-left p-3 rounded-xl hover:bg-slate-100 transition-all flex items-center gap-3">
+                <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i data-lucide="book-open" class="w-4 h-4"></i></div>
+                <div><p class="text-sm font-bold">Decision Ledger</p><p class="text-xs text-slate-400">Action history</p></div>
+            </button>
+            <div id="ledger-modal" class="fixed inset-0 bg-slate-900/60 hidden z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i> Decision Ledger History</h3>
+                <button onclick="closeLedgerModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="overflow-y-auto p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                <th class="p-3 font-bold">Date</th>
+                                <th class="p-3 font-bold">Crop</th>
+                                <th class="p-3 font-bold">AI Strategy</th>
+                                <th class="p-3 font-bold">Your Action</th>
+                                <th class="p-3 font-bold">Projected (RM)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledger-table-body" class="text-sm divide-y divide-slate-100">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -210,11 +239,15 @@
         <span id="toast-msg">Success!</span>
     </div>
 
+    
 <script>
     lucide.createIcons();
 
+    // --- ADD THIS VARIABLE AT THE TOP ---
+    let lastAiRecommendation = ""; // This catches the text from Step 1
+
     // ==========================================
-    // 1. MODAL & PLOT REGISTRATION (The missing pieces!)
+    // 1. MODAL & PLOT REGISTRATION
     // ==========================================
     function openModal() { document.getElementById('plot-modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('plot-modal').classList.add('hidden'); }
@@ -236,21 +269,14 @@
                 body: JSON.stringify(payload)
             });
             const aiResult = await res.json();
-            
-            // Close modal and reset form
             closeModal();
             document.getElementById('plot-form').reset();
             document.getElementById('gpsAddress').value = "";
             document.getElementById('map-container').classList.add('hidden');
-            
-            // Add the new card to the UI
             displayPlotCard(payload.plotId, payload.cropName, payload.landSize, aiResult.expectedYield, aiResult.waterReq);
-            
-            // Show Success Toast
             const toast = document.getElementById('toast');
             toast.classList.remove('opacity-0', '-translate-y-10');
             setTimeout(() => toast.classList.add('opacity-0', '-translate-y-10'), 3000);
-            
         } catch (err) { 
             alert("⚠️ Cannot save plot. Ensure your Java backend is running."); 
         }
@@ -261,13 +287,11 @@
         const mapC = document.getElementById('map-container');
         const mapF = document.getElementById('map-frame');
         addr.value = "Locating satellite...";
-        
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const lat = pos.coords.latitude; const lon = pos.coords.longitude;
                 document.getElementById('rawLat').value = lat;
                 document.getElementById('rawLon').value = lon;
-                
                 try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
                     const data = await res.json();
@@ -292,7 +316,6 @@
         const grid = document.getElementById('plot-grid');
         const colors = ['emerald-500', 'blue-500', 'indigo-500', 'cyan-500'];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
-        
         const cardHTML = `
             <div onclick="showChat('${cropName}', ${landSize})" class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden animate-fade-in cursor-pointer group">
                 <div class="absolute top-0 left-0 w-full h-1 bg-${randomColor} group-hover:h-2"></div>
@@ -315,8 +338,6 @@
         document.getElementById('dashboard-view').classList.add('hidden');
         document.getElementById('chat-view').classList.remove('hidden');
         document.getElementById('chat-view').classList.add('flex');
-        
-        // Auto-trigger a welcome message
         appendAIResponse(`Hello! I'm ready to analyze your <b>${cropName}</b> plot (${landSize} acres). What would you like to know?`);
     }
 
@@ -351,27 +372,28 @@
         const input = document.getElementById('chatInput');
         const msg = presetMsg || input.value.trim();
         if (!msg) return;
-
         appendUserMessage(msg);
         input.value = "";
         showLoading();
-
         const payload = {
             message: msg,
             cropName: window.currentCrop || "General",
             landSize: window.currentSize ? window.currentSize.toString() : "0"
         };
-
         try {
-            const res = await fetch('/api/crops/chat', { // If you get 404 here, change to '/api/chat/send'
+            const res = await fetch('/api/crops/chat', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            
             hideLoading();
             appendAIResponse(data.reply);
+            if (data.reply.toLowerCase().includes("plan") || 
+                data.reply.toLowerCase().includes("strategy") || 
+                data.reply.toLowerCase().includes("recommend")) {
+                appendDecisionButtons();
+            }
         } catch (err) {
             hideLoading();
             appendAIResponse("⚠️ Error connecting to Z.AI Engine. Please ensure your backend is running.");
@@ -389,11 +411,11 @@
         chat.scrollTop = chat.scrollHeight;
     }
 
+    // --- UPDATED: THIS NOW SAVES THE TEXT FROM STEP 1 ---
     function appendAIResponse(msg) {
+        lastAiRecommendation = msg; // Store the Step 1 text globally
         const chat = document.getElementById('chat-messages');
-        // Parse markdown and remove extra whitespace
         const formattedHTML = marked.parse(msg).trim(); 
-        
         chat.insertAdjacentHTML('beforeend', `
             <div class="flex justify-start animate-fade-in mb-4">
                 <div class="bg-white px-5 py-4 rounded-2xl max-w-2xl shadow border text-slate-700 prose prose-emerald prose-sm sm:prose-base">
@@ -402,19 +424,122 @@
             </div>`);
         chat.scrollTop = chat.scrollHeight;
     }
-    
+
     function quickFaq(question) {
         document.getElementById('chatInput').value = question;
         sendMessage();
     }
 
     // ==========================================
-    // 4. INITIALIZATION (Load Demo Cards)
+    // 4. INITIALIZATION
     // ==========================================
     window.onload = async function() {
         displayPlotCard("PLT-001", "Paddy (MR297)", 2.5, "4.2 MT", "Moderate");
         displayPlotCard("PLT-002", "Musang King", 5.0, "8.5 MT", "High");
     };
+
+    // ==========================================
+    // 5. DECISION LEDGER LOGIC
+    // ==========================================
+    function closeLedgerModal() {
+        document.getElementById('ledger-modal').classList.add('hidden');
+    }
+
+    async function openLedgerHistory() {
+        document.getElementById('ledger-modal').classList.remove('hidden');
+        const tbody = document.getElementById('ledger-table-body');
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i> Loading...</td></tr>`;
+        lucide.createIcons();
+        try {
+            const res = await fetch('/api/ledger/all');
+            const entries = await res.json();
+            if (entries.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No decisions logged yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = entries.map(entry => {
+                const date = new Date(entry.timestamp).toLocaleDateString();
+                const chosen = entry.chosenPlan ? 
+                    `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-xs font-bold">${entry.chosenPlan}</span>` : 
+                    `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-xs font-bold">Pending</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-3 text-slate-500">${date}</td>
+                        <td class="p-3 font-bold text-slate-700">${entry.recommendedCrop}</td>
+                        <td class="p-3 text-xs italic text-slate-600">${(entry.reasoning || entry.recommendedStrategy || '—').substring(0, 60)}...</td>
+                        <td class="p-3">${chosen}</td>
+                        <td class="p-3 font-mono text-emerald-600 font-bold">${entry.projectedEconomicImpact || '0.00'}</td>
+                    </tr>`;
+            }).join('');
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-500 font-bold">Error loading ledger data. Is the backend running?</td></tr>`;
+        }
+    }
+
+    function appendDecisionButtons() {
+        const chat = document.getElementById('chat-messages');
+        chat.insertAdjacentHTML('beforeend', `
+            <div id="decision-actions" class="flex justify-start animate-fade-in mb-4">
+                <div class="bg-white p-4 rounded-2xl shadow border border-indigo-100 flex flex-col gap-2 max-w-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Decision Core</p>
+                    <p class="text-xs text-slate-600">Would you like to implement this strategy?</p>
+                    <div class="flex gap-2">
+                        <button onclick="logDecision('Implemented')" class="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-700">Implement</button>
+                        <button onclick="logDecision('Ignored')" class="bg-slate-100 text-slate-500 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200">Ignore</button>
+                    </div>
+                </div>
+            </div>`);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    // --- UPDATED: THIS NOW SENDS THE SAVED STEP 1 TEXT TO STEP 3 ---
+    async function logDecision(status) {
+        const payload = {
+            plotId: window.currentCrop || "General Plot",
+            chosenStrategy: status,
+            recommendationText: lastAiRecommendation, // The captured prompt from Step 1
+            timestamp: new Date().toISOString()
+        };
+        try {
+            const res = await fetch('/api/ledger/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                document.getElementById('decision-actions').remove();
+                appendAIResponse(`Decision recorded: **${status}**. Added to history.`);
+                const toast = document.getElementById('toast');
+                document.getElementById('toast-msg').innerText = `Saved ${status} status to Ledger!`;
+                toast.classList.remove('opacity-0', '-translate-y-10');
+                setTimeout(() => toast.classList.add('opacity-0', '-translate-y-10'), 3000);
+            }
+        } catch (e) { 
+            console.error("Ledger save failed."); 
+            alert("Connection error: Could not save decision.");
+        }
+    }
+
+    async function showDecisionHistory() {
+        appendUserMessage("Show my Decision History");
+        showLoading();
+        try {
+            const res = await fetch('/api/ledger/all');
+            const entries = await res.json();
+            hideLoading();
+            let historyMsg = "### 📜 Decision History Ledger\n\n";
+            const implemented = entries.filter(e => e.chosenPlan === 'Implemented');
+            if(implemented.length === 0) {
+                historyMsg += "_No implemented decisions found._";
+            } else {
+                implemented.forEach(e => {
+                    historyMsg += `- **${e.recommendedCrop}**: Plan implemented on ${e.timestamp.split('T')[0]}\n`;
+                });
+            }
+            appendAIResponse(historyMsg);
+        } catch (e) { hideLoading(); appendAIResponse("⚠️ Could not retrieve history."); }
+    }
 </script>
 </body>
 </html>

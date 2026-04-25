@@ -64,3 +64,4 @@ public Map<String, Double> getPlotData() {
     public void setRecommendedStrategy(String recommendedStrategy) { 
      this.recommendedStrategy = recommendedStrategy; 
 }}
+

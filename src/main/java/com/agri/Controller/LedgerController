@@ -1,0 +1,119 @@
+// package com.agri.Controller;
+
+// import org.springframework.http.ResponseEntity;
+// import org.springframework.web.bind.annotation.*;
+// import com.agri.ledger.*; // Ensure imports are correct
+// import java.util.List;
+// import java.util.Map;
+
+// @RestController
+// @RequestMapping("/api/ledger")
+// @CrossOrigin(origins = "*") 
+// public class LedgerController {
+
+//     private final DecisionLogger decisionLogger = new DecisionLogger();
+//     private final UserActionTracker actionTracker = new UserActionTracker(decisionLogger);
+
+//     @GetMapping("/all")
+//    public ResponseEntity<List<LedgerEntry>> getAllDecisions() {
+//         try {
+//         List<LedgerEntry> entries = decisionLogger.loadAll();
+//             return ResponseEntity.ok(entries);
+//         } catch (Exception e) {
+//              return ResponseEntity.internalServerError().build();
+//         }
+//     }
+
+//      @PostMapping("/save")
+//     public ResponseEntity<String> saveDecision(@RequestBody Map<String, String> payload) {
+//         // The frontend sends 'plotId' (e.g., "Musang King")
+//          String cropName = payload.getOrDefault("plotId", ""); 
+//          String status = payload.getOrDefault("chosenStrategy", "Implemented");
+      
+//          try {
+//              List<LedgerEntry> all = decisionLogger.loadAll();
+//              String targetId = null;
+
+//              // Search from newest to oldest
+//              for (int i = all.size() - 1; i >= 0; i--) {
+//              String entryCrop = all.get(i).getRecommendedCrop();
+
+//             // HACKATHON FIX: We check if the name matches OR if one contains the other
+//                  if (cropName.equalsIgnoreCase(entryCrop) || 
+//             (entryCrop != null && entryCrop.contains(cropName))) {
+//              targetId = all.get(i).getRecommendationId();
+//              break;
+//              }
+//              }
+
+//              if (targetId != null) {
+//              actionTracker.recordChoice(targetId, status);
+//              return ResponseEntity.ok("Decision Logged");
+//              }
+
+//             // If we can't find a match, just update the very last entry 
+//             // This is a "Safety net" for your demo!
+//          if (!all.isEmpty()) {
+//              actionTracker.recordChoice(all.get(all.size()-1).getRecommendationId(), status);
+//              return ResponseEntity.ok("Logged to latest entry");
+//              }
+
+//              return ResponseEntity.badRequest().body("Ledger is empty.");
+//         } catch (Exception e) {
+//             return ResponseEntity.internalServerError().body(e.getMessage());
+//         }
+//      }
+// }
+
+
+// package com.agri.Controller;
+
+// import org.springframework.http.ResponseEntity;
+// import org.springframework.web.bind.annotation.*;
+// import java.util.List;
+// import java.util.Map;
+
+// @RestController
+// @RequestMapping("/api/ledger")
+// @CrossOrigin(origins = "*") 
+// public class LedgerController {
+
+//     private final DecisionLogger decisionLogger = new DecisionLogger();
+//     private final UserActionTracker actionTracker = new UserActionTracker(decisionLogger);
+
+//     // GET: Retrieve all history for the sidebar
+//     @GetMapping("/all")
+//     public ResponseEntity<List<LedgerEntry>> getAllDecisions() {
+//         try {
+//             return ResponseEntity.ok(decisionLogger.loadAll());
+//         } catch (Exception e) {
+//             return ResponseEntity.internalServerError().build();
+//         }
+//     }
+
+//     // POST: Save user's "Implement" or "Ignore" choice
+//     @PostMapping("/save")
+//     public ResponseEntity<String> saveDecision(@RequestBody Map<String, String> payload) {
+//         String cropName = payload.getOrDefault("plotId", "General Plot");
+//         String status = payload.getOrDefault("chosenStrategy", "Ignored");
+        
+//         try {
+//             // Logic: Find latest AI recommendation and update it with user choice
+//             List<LedgerEntry> all = decisionLogger.loadAll();
+//             String targetId = null;
+//             for (int i = all.size() - 1; i >= 0; i--) {
+//                 if (cropName.equalsIgnoreCase(all.get(i).getRecommendedCrop())) {
+//                     targetId = all.get(i).getRecommendationId();
+//                     break;
+//                 }
+//             }
+//             if (targetId != null) {
+//                 actionTracker.recordChoice(targetId, status);
+//                 return ResponseEntity.ok("Decision Logged");
+//             }
+//             return ResponseEntity.badRequest().body("No recent recommendation found to log.");
+//         } catch (Exception e) {
+//             return ResponseEntity.internalServerError().body(e.getMessage());
+//         }
+//     }
+// }

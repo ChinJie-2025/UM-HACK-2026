@@ -33,13 +33,14 @@ public class GlmClient {
     
 
     // ── Z.AI GLM endpoint & model ────────────────────────────────────────────────
-    private static final String API_URL = "ANTHROPIC_BASE_URL=https://api.ilmu.ai/anthropic";
+  private static final String API_URL = "https://api.ilmu.ai/anthropic";
     private static final String MODEL   = "ilmu-glm-5.1";
 
     // Low temperature → more deterministic JSON output from the GLM
     private static final double TEMPERATURE     = 0.3;
-    private static final int    CONNECT_TIMEOUT = 15_000; // ms
-    private static final int    READ_TIMEOUT    = 60_000; // ms
+    // ── Increase the patience for high-quality responses ──────────────────────────
+private static final int CONNECT_TIMEOUT = 30_000;  // 30 seconds to connect
+private static final int READ_TIMEOUT    = 180_000; // 180 seconds (3 minutes) to wait for the full reply
     private static final int    MAX_TOKENS      = 1024; // <-- Add this constant
 
     private final String       apiKey;
