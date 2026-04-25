@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agri-Investment Risk Analyst | Command Center</title>
     
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -119,7 +120,7 @@
         </div>
     </div>
 
-    <div id="chat-view" class="hidden flex-1 h-full flex bg-[#e6ecea]">
+    <div id="chat-view" class="hidden flex-1 min-h-0 flex bg-[#e6ecea]">
     <div class="w-80 bg-white border-r border-slate-200 flex flex-col hidden md:flex">
         <div class="p-4 bg-slate-900 text-white font-bold flex items-center gap-2">
             <i data-lucide="message-square"></i> Z.AI Channels
@@ -137,7 +138,7 @@
         </div>
     </div>
 
-    <div class="flex-1 flex flex-col relative">
+    <div class="flex-1 flex flex-col relative min-h-0">
         <div class="bg-white/80 backdrop-blur p-4 border-b flex justify-between items-center shadow-sm">
             <div class="flex items-center gap-3">
                 <button onclick="showDashboard()" class="md:hidden"><i data-lucide="menu"></i></button>
@@ -150,7 +151,7 @@
         <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 chat-bg">
             </div>
 
-        <div class="p-4 bg-white/50 backdrop-blur border-t">
+        <div class="p-4 bg-white/50 backdrop-blur border-t shrink-0">
             <div class="max-w-4xl mx-auto flex gap-3">
                 <input type="text" id="chatInput" placeholder="Message Z.AI..." class="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm" onkeypress="if(event.key==='Enter') sendMessage()">
                 <button onclick="sendMessage()" class="bg-slate-900 text-white p-3 rounded-2xl hover:bg-emerald-600 transition-all shadow-lg"><i data-lucide="send"></i></button>
@@ -209,231 +210,211 @@
         <span id="toast-msg">Success!</span>
     </div>
 
-    <script>
-        lucide.createIcons();
+<script>
+    lucide.createIcons();
 
-        // 1. MASTER RENDERER: Makes cards clickable to open Z.AI
-        function displayPlotCard(plotId, cropName, landSize, yieldVal, waterVal) {
-            const grid = document.getElementById('plot-grid');
-            const colors = ['emerald-500', 'blue-500', 'indigo-500', 'cyan-500'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            
-            const cardHTML = `
-                <div onclick="showChat('${cropName}')" class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden animate-fade-in cursor-pointer group">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-${randomColor} group-hover:h-2"></div>
-                    <div class="p-6">
-                        <div class="flex justify-between items-start mb-6">
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">${plotId}</h3>
-                                <p class="text-sm text-slate-500">${cropName} • ${landSize} Acres</p>
-                            </div>
-                            <div class="bg-slate-50 text-slate-400 px-3 py-1 rounded-full text-xs font-bold border border-slate-100 flex items-center gap-1">
-                                <i data-lucide="database" class="w-3 h-3"></i> Synced
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-[10px] uppercase font-bold text-slate-400">Est. Yield</p>
-                                <p class="text-sm font-bold text-slate-700">${yieldVal || '---'}</p>
-                            </div>
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-[10px] uppercase font-bold text-slate-400">Water Need</p>
-                                <p class="text-sm font-bold text-slate-700 truncate">${waterVal || '---'}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            grid.insertAdjacentHTML('beforeend', cardHTML);
-            lucide.createIcons();
-        }
+    // ==========================================
+    // 1. MODAL & PLOT REGISTRATION (The missing pieces!)
+    // ==========================================
+    function openModal() { document.getElementById('plot-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('plot-modal').classList.add('hidden'); }
 
-        // 2. PERSISTENCE LOGIC: Runs every time you refresh
-        window.onload = async function() {
-            // Sample demo cards
-            displayPlotCard("PLT-001", "Paddy (MR297)", 2.5, "4.2 MT", "Moderate");
-            displayPlotCard("PLT-002", "Musang King", 5.0, "8.5 MT", "High");
-            
-            try {
-                const response = await fetch('/api/crops/all');
-                if (response.ok) {
-                    const plots = await response.json();
-                    plots.forEach(p => {
-                        displayPlotCard(p.plotId, p.cropName, p.landSize, p.expectedYield, p.waterReq);
-                    });
-                }
-            } catch (err) { console.warn("Backend not reachable."); }
+    async function submitPlot(event) {
+        event.preventDefault();
+        const payload = {
+            plotId: document.getElementById('plotId').value,
+            cropName: document.getElementById('cropName').value,
+            landSize: parseFloat(document.getElementById('landSize').value),
+            plantingDate: document.getElementById('plantingDate').value,
+            gpsLocation: document.getElementById('gpsAddress').value
         };
 
-        // 3. SUBMIT LOGIC: Fixes the "Sticky Info" bug
-        async function submitPlot(event) {
-            event.preventDefault();
-            const payload = {
-                plotId: document.getElementById('plotId').value,
-                cropName: document.getElementById('cropName').value,
-                landSize: parseFloat(document.getElementById('landSize').value),
-                plantingDate: document.getElementById('plantingDate').value,
-                gpsLocation: document.getElementById('gpsAddress').value
-            };
-
-            try {
-                const res = await fetch('/api/crops/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const aiResult = await res.json();
-                
-                // BUG FIX: Reset form and close modal
-                closeModal();
-                document.getElementById('plot-form').reset();
-                document.getElementById('gpsAddress').value = "";
-                document.getElementById('map-container').classList.add('hidden');
-                
-                // Add card and switch to chat
-                displayPlotCard(payload.plotId, payload.cropName, payload.landSize, aiResult.expectedYield, aiResult.waterReq);
-                showToast("Registered to Ledger!");
-                setTimeout(() => showChat(payload.cropName), 1500);
-            } catch (err) { alert("Backend Error."); }
+        try {
+            const res = await fetch('/api/crops/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const aiResult = await res.json();
+            
+            // Close modal and reset form
+            closeModal();
+            document.getElementById('plot-form').reset();
+            document.getElementById('gpsAddress').value = "";
+            document.getElementById('map-container').classList.add('hidden');
+            
+            // Add the new card to the UI
+            displayPlotCard(payload.plotId, payload.cropName, payload.landSize, aiResult.expectedYield, aiResult.waterReq);
+            
+            // Show Success Toast
+            const toast = document.getElementById('toast');
+            toast.classList.remove('opacity-0', '-translate-y-10');
+            setTimeout(() => toast.classList.add('opacity-0', '-translate-y-10'), 3000);
+            
+        } catch (err) { 
+            alert("⚠️ Cannot save plot. Ensure your Java backend is running."); 
         }
+    }
 
-        // 4. GPS LOGIC (The version you liked)
-        async function getLocationWithMap() {
-            const addr = document.getElementById('gpsAddress');
-            const mapC = document.getElementById('map-container');
-            const mapF = document.getElementById('map-frame');
-            addr.value = "Locating satellite...";
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const lat = pos.coords.latitude; const lon = pos.coords.longitude;
-                    document.getElementById('rawLat').value = lat;
-                    document.getElementById('rawLon').value = lon;
+    async function getLocationWithMap() {
+        const addr = document.getElementById('gpsAddress');
+        const mapC = document.getElementById('map-container');
+        const mapF = document.getElementById('map-frame');
+        addr.value = "Locating satellite...";
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+                document.getElementById('rawLat').value = lat;
+                document.getElementById('rawLon').value = lon;
+                
+                try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
                     const data = await res.json();
                     addr.value = data.display_name || `Lat: ${lat}, Lon: ${lon}`;
                     mapC.classList.remove('hidden');
                     mapF.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.005},${lat-0.005},${lon+0.005},${lat+0.005}&layer=mapnik&marker=${lat},${lon}`;
-                });
-            }
+                } catch (e) {
+                    addr.value = `Lat: ${lat}, Lon: ${lon} (Map unavailable)`;
+                }
+            }, () => {
+                addr.value = "GPS Permission Denied.";
+            });
+        } else {
+            addr.value = "Geolocation not supported by this browser.";
         }
+    }
 
-        // VIEW HELPERS
-        function openModal() { document.getElementById('plot-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('plot-modal').classList.add('hidden'); }
-        function showDashboard() { 
-            document.getElementById('chat-view').classList.add('hidden'); 
-            document.getElementById('dashboard-view').classList.remove('hidden'); 
+    // ==========================================
+    // 2. DASHBOARD CARDS & VIEW SWITCHING
+    // ==========================================
+    function displayPlotCard(plotId, cropName, landSize, yieldVal, waterVal) {
+        const grid = document.getElementById('plot-grid');
+        const colors = ['emerald-500', 'blue-500', 'indigo-500', 'cyan-500'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        const cardHTML = `
+            <div onclick="showChat('${cropName}', ${landSize})" class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden animate-fade-in cursor-pointer group">
+                <div class="absolute top-0 left-0 w-full h-1 bg-${randomColor} group-hover:h-2"></div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-slate-900 group-hover:text-emerald-600">${plotId}</h3>
+                    <p class="text-sm text-slate-500 mb-6">${cropName} • ${landSize} Acres</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-3 rounded-xl border"><p class="text-[10px] font-bold text-slate-400">Yield</p><p class="text-sm font-bold text-slate-700">${yieldVal}</p></div>
+                        <div class="bg-slate-50 p-3 rounded-xl border"><p class="text-[10px] font-bold text-slate-400">Water</p><p class="text-sm font-bold text-slate-700">${waterVal}</p></div>
+                    </div>
+                </div>
+            </div>`;
+        grid.insertAdjacentHTML('beforeend', cardHTML);
+        lucide.createIcons();
+    }
+
+    function showChat(cropName, landSize) {
+        window.currentCrop = cropName;
+        window.currentSize = landSize;
+        document.getElementById('dashboard-view').classList.add('hidden');
+        document.getElementById('chat-view').classList.remove('hidden');
+        document.getElementById('chat-view').classList.add('flex');
+        
+        // Auto-trigger a welcome message
+        appendAIResponse(`Hello! I'm ready to analyze your <b>${cropName}</b> plot (${landSize} acres). What would you like to know?`);
+    }
+
+    function showDashboard() { 
+        document.getElementById('chat-view').classList.add('hidden'); 
+        document.getElementById('dashboard-view').classList.remove('hidden'); 
+    }
+
+    // ==========================================
+    // 3. CHAT LOGIC & LOADING INDICATORS
+    // ==========================================
+    function showLoading() {
+        const chat = document.getElementById('chat-messages');
+        chat.insertAdjacentHTML('beforeend', `
+            <div id="ai-loading" class="flex justify-start animate-fade-in mb-4">
+                <div class="bg-white px-4 py-3 rounded-2xl shadow border text-slate-500 italic flex items-center gap-2">
+                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                    Z.AI is thinking...
+                </div>
+            </div>
+        `);
+        lucide.createIcons(); 
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function hideLoading() {
+        const el = document.getElementById('ai-loading');
+        if (el) el.remove();
+    }
+
+    async function sendMessage(presetMsg = null) {
+        const input = document.getElementById('chatInput');
+        const msg = presetMsg || input.value.trim();
+        if (!msg) return;
+
+        appendUserMessage(msg);
+        input.value = "";
+        showLoading();
+
+        const payload = {
+            message: msg,
+            cropName: window.currentCrop || "General",
+            landSize: window.currentSize ? window.currentSize.toString() : "0"
+        };
+
+        try {
+            const res = await fetch('/api/crops/chat', { // If you get 404 here, change to '/api/chat/send'
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            hideLoading();
+            appendAIResponse(data.reply);
+        } catch (err) {
+            hideLoading();
+            appendAIResponse("⚠️ Error connecting to Z.AI Engine. Please ensure your backend is running.");
         }
-        function showChat(cropName, landSize) {
-    // Set global context for the GLM
-    window.currentCrop = cropName;
-    window.currentSize = landSize;
+    }
 
-    document.getElementById('dashboard-view').classList.add('hidden');
-    document.getElementById('chat-view').classList.remove('hidden').add('flex');
+    function appendUserMessage(msg) {
+        const chat = document.getElementById('chat-messages');
+        chat.insertAdjacentHTML('beforeend', `
+            <div class="flex justify-end animate-fade-in mb-4">
+                <div class="bg-emerald-500 text-white px-4 py-2 rounded-2xl max-w-xs shadow-md">
+                    ${msg}
+                </div>
+            </div>`);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function appendAIResponse(msg) {
+        const chat = document.getElementById('chat-messages');
+        // Parse markdown and remove extra whitespace
+        const formattedHTML = marked.parse(msg).trim(); 
+        
+        chat.insertAdjacentHTML('beforeend', `
+            <div class="flex justify-start animate-fade-in mb-4">
+                <div class="bg-white px-5 py-4 rounded-2xl max-w-2xl shadow border text-slate-700 prose prose-emerald prose-sm sm:prose-base">
+                    ${formattedHTML}
+                </div>
+            </div>`);
+        chat.scrollTop = chat.scrollHeight;
+    }
     
-    // Auto-trigger first analysis
-    sendMessage("Check my yield estimation");
-}
-        // FAQ Trigger
-function quickFaq(question) {
-    document.getElementById('chatInput').value = question;
-    sendMessage();
-}
-
-// Telegram-Style Send
-async function sendMessage(presetMsg = null) {
-    const input = document.getElementById('chatInput');
-    const msg = presetMsg || input.value.trim();
-    if (!msg) return;
-
-    // Use global variables set when the user clicked "Map New Plot" or a card
-    const payload = {
-        message: msg,
-        cropName: window.currentSelectedCrop || "General",
-        landSize: window.currentSelectedSize || "0"
-    };
-
-    try {
-        const res = await fetch('/api/crops/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        appendAIResponse(data.reply);
-    } catch (e) {
-        console.error("GLM Sync Failed");
+    function quickFaq(question) {
+        document.getElementById('chatInput').value = question;
+        sendMessage();
     }
-}
-function appendUserMessage(msg) {
-    const chat = document.getElementById('chat-messages');
 
-    chat.insertAdjacentHTML('beforeend', `
-        <div class="flex justify-end animate-fade-in">
-            <div class="bg-emerald-500 text-white px-4 py-2 rounded-2xl max-w-xs">
-                ${msg}
-            </div>
-        </div>
-    `);
-
-    chat.scrollTop = chat.scrollHeight;
-}
-
-function appendAIResponse(msg) {
-    const chat = document.getElementById('chat-messages');
-
-    chat.insertAdjacentHTML('beforeend', `
-        <div class="flex justify-start animate-fade-in">
-            <div class="bg-white px-4 py-3 rounded-2xl max-w-md shadow border">
-                ${msg}
-            </div>
-        </div>
-    `);
-
-    chat.scrollTop = chat.scrollHeight;
-}
-
-/* FIX ONLY THIS FUNCTION (DO NOT TOUCH OTHER LOGIC) */
-async function sendMessage(presetMsg = null) {
-    const input = document.getElementById('chatInput');
-    const msg = presetMsg || input.value.trim();
-    if (!msg) return;
-
-    appendUserMessage(msg);
-    input.value = "";
-
-    const payload = {
-        message: msg,
-
-        // 🔥 FIXED HERE
-        cropName: window.currentCrop || "General",
-        landSize: window.currentSize || "0"
+    // ==========================================
+    // 4. INITIALIZATION (Load Demo Cards)
+    // ==========================================
+    window.onload = async function() {
+        displayPlotCard("PLT-001", "Paddy (MR297)", 2.5, "4.2 MT", "Moderate");
+        displayPlotCard("PLT-002", "Musang King", 5.0, "8.5 MT", "High");
     };
-
-    try {
-        const res = await fetch('/api/crops/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-        appendAIResponse(data.reply);
-
-    } catch (err) {
-        console.error(err);
-        appendAIResponse("⚠️ Z.AI backend error or not responding");
-    }
-}
-
-/* FIX showChat ONLY (small bug) */
-function showChat(cropName, landSize) {
-    window.currentCrop = cropName;
-    window.currentSize = landSize;
-
-    document.getElementById('dashboard-view').classList.add('hidden');
-    document.getElementById('chat-view').classList.remove('hidden');
-}
-    </script>
+</script>
 </body>
 </html>

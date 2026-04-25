@@ -1,0 +1,29 @@
+package com.agri;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+public class AgriwiseApplicationTests {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    public void testGetAllPlotsEndpoint() throws Exception {
+        System.out.println("🧪 TESTING: Fetching all plots from the database...");
+        
+        // This simulates your frontend calling the /all endpoint
+        mockMvc.perform(get("/api/crops/all"))
+               .andExpect(status().isOk()); // We expect a "200 OK" success status
+               
+        System.out.println("✅ TEST PASSED: Endpoint is working perfectly!");
+    }
+}
