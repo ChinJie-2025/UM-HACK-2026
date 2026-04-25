@@ -6,8 +6,10 @@ public class FarmerProfile {
     private String farmerName;
     private String riskTolerance;
     private List<CropPlot> myPlots;
-
-    public FarmerProfile(){}
+    public FarmerProfile() {
+        // FIX: Initialize the list so it is never null
+        this.myPlots = new ArrayList<>();
+    }
 
     public FarmerProfile(String farmerName, String riskTolerance) {
         this.farmerName = farmerName;

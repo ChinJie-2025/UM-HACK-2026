@@ -134,16 +134,14 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.agri.engine.*;
-import com.agri.model.AnalysisResult;
-import com.agri.model.CropData;
-import com.agri.model.FarmerProfile;
-import com.agri.model.SimulationRequest;
 import com.agri.sandbox.ScenarioSolver;
 import com.agri.sandbox.SimulationController;
 import com.agri.sandbox.SimulationRunner;
 import com.agri.service.ZAIService;
 import org.springframework.context.event.EventListener;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
@@ -294,27 +292,46 @@ private DecisionService decisionService; // Assuming you have this service
  * This method runs once the application starts. 
  * Use this for testing the console simulation logic.
  */
+
+
 @EventListener(ApplicationReadyEvent.class)
 public void runSimulationTest() {
     FarmerProfile profile = new FarmerProfile(); 
+    
+    // Use CropPlot instead of Plot
+    // Note: It requires PlotId, CropName, Address, LandSize, Date, Budget, Lat, Long
+    CropPlot dummyPlot = new CropPlot(
+        "P-001", 
+        "Corn", 
+        "Universiti Malaya, KL", 
+        5.0, 
+        LocalDate.now(), 
+        5000.0, 
+        3.12, 
+        101.65
+    );
+
+    profile.getMyPlots().add(dummyPlot);
+
     List<CropData> market = new ArrayList<>();
+    String weather = "Sunny";
 
     try {
-        // This is where the red line was
-        AnalysisResult baseline = decisionService.analyze(profile, market, "Sunny");
+        AnalysisResult baseline = decisionService.analyze(profile, market, weather);
+        simulationController.setSessionData(profile, market, weather);
         simulationController.setOriginalResult(baseline);
-        System.out.println("✅ Baseline loaded successfully.");
+        System.out.println("✅ Sandbox Baseline initialized with CropPlot.");
     } catch (IOException e) {
-        System.err.println("❌ Failed to load simulation baseline: " + e.getMessage());
+        System.err.println("❌ Baseline failed: " + e.getMessage());
     }
 }
 
 @PostMapping("/simulate")
-public ResponseEntity<AnalysisResult> runSimulation(@RequestBody SimulationRequest request) {
+public ResponseEntity<AnalysisResult> handleWebSimulation(@RequestBody SimulationRequest request) {
     try {
-        // This calls the logic we built
-        AnalysisResult result = simulationController.handleSimulationRequest(request);
-        return ResponseEntity.ok(result);
+        // This triggers your "Comparative View" in the console and returns data to the web
+        AnalysisResult hypothetical = simulationController.handleSimulationRequest(request);
+        return ResponseEntity.ok(hypothetical);
     } catch (IOException e) {
         return ResponseEntity.internalServerError().build();
     }

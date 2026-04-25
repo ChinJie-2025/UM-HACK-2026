@@ -98,19 +98,19 @@ public class DecisionService {
      */
     // Inside DecisionService.java
 public AnalysisResult analyze(FarmerProfile profile, List<CropData> marketData, String weatherContext) throws IOException {
-    // 1. Build prompt
+    System.out.println("[DecisionService] Step 1: Building Prompt...");
     String prompt = promptBuilder.build(profile, marketData, weatherContext);
     
-    // 2. Call GLM
-    String rawResponse = glmClient.call(prompt);
+    System.out.println("[DecisionService] Step 2: Calling GLM API (This might take a while)...");
+    String rawResponse = glmClient.call(prompt); // <--- IF STUCK, IT STOPS HERE
     
-    // 3. Parse and generate strategies
+    System.out.println("[DecisionService] Step 3: Parsing Response...");
     AnalysisResult result = rationaleGenerator.parse(rawResponse);
+    
+    System.out.println("[DecisionService] Step 4: Generating Strategies...");
     Map<String, String> strategies = strategyGenerator.generate(result, profile, marketData);
     
-    // 4. Attach strategies so plot data is available
     result.setStrategyBreakdown(strategies);
-    
     return result;
 }
 
