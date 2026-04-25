@@ -3,7 +3,7 @@ Documentation:
 2. [SYSTEM ANALYSIS DOCUMENTATION (SAD)_168.pdf](https://github.com/user-attachments/files/27089083/SYSTEM.ANALYSIS.DOCUMENTATION.SAD._168.pdf)
 3. [PRODUCT REQUIREMENT DOCUMENT (PRD)_168.pdf](https://github.com/user-attachments/files/27089081/PRODUCT.REQUIREMENT.DOCUMENT.PRD._168.pdf)
 4. Pitch Deck: [Pitch Deck_168.pdf](https://github.com/user-attachments/files/27089863/Pitch.Deck_168.pdf)
-5. Pitch Video: 
+5. Pitch Video: https://drive.google.com/file/d/1dj42Oe1YUAZ0vLpZWWpyVETtaZ6J_FyD/view?usp=sharing 
 
 
 # 🌾 AgriWise - AI-Powered Agricultural Investment Risk Analyst
